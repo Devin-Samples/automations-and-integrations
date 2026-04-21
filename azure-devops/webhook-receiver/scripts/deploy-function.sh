@@ -63,14 +63,14 @@ if [ -z "${DEVIN_API_KEY:-}" ] || [ -z "${DEVIN_ORG_ID:-}" ]; then
   echo "    --resource-group $RESOURCE_GROUP \\"
   echo "    --settings DEVIN_API_KEY=<key> DEVIN_ORG_ID=<org-id>"
 else
-  SETTINGS="DEVIN_API_KEY=$DEVIN_API_KEY DEVIN_ORG_ID=$DEVIN_ORG_ID"
+  SETTINGS=("DEVIN_API_KEY=$DEVIN_API_KEY" "DEVIN_ORG_ID=$DEVIN_ORG_ID")
   if [ -n "${DEVIN_TAG:-}" ]; then
-    SETTINGS="$SETTINGS DEVIN_TAG=$DEVIN_TAG"
+    SETTINGS+=("DEVIN_TAG=$DEVIN_TAG")
   fi
   az functionapp config appsettings set \
     --name "$FUNC_APP_NAME" \
     --resource-group "$RESOURCE_GROUP" \
-    --settings $SETTINGS \
+    --settings "${SETTINGS[@]}" \
     --output none
   echo "App settings configured."
 fi
