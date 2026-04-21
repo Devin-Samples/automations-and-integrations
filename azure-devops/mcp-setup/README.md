@@ -16,7 +16,7 @@ Devin's [native Azure DevOps integration](https://docs.devin.ai/enterprise/integ
 
 An MCP server bridges this gap by exposing the Azure DevOps REST API to Devin as callable tools.
 
-## Option A: Microsoft MCP Server (Recommended)
+## Setup: Microsoft MCP Server
 
 Use the official [`@azure-devops/mcp`](https://github.com/microsoft/azure-devops-mcp) server from Microsoft, which wraps the Azure DevOps REST API as MCP tools.
 
@@ -57,93 +57,6 @@ Once connected, Devin can use tools like:
 
 The exact tool list depends on the MCP server version. Click **Test listing tools** in the Devin UI to see the full set.
 
-## Option B: Build Your Own MCP Server
-
-If you need custom logic, scoped access, or want to expose only specific Azure DevOps APIs, build a custom MCP server.
-
-### Minimal Example (Node.js / STDIO)
-
-```javascript
-// azure-devops-mcp-server.js
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { z } from "zod";
-
-const ORG_URL = process.env.AZURE_DEVOPS_ORG_URL;
-const PAT = process.env.AZURE_DEVOPS_PAT;
-
-const authHeader = "Basic " + Buffer.from(":" + PAT).toString("base64");
-
-const server = new McpServer({
-  name: "azure-devops",
-  version: "1.0.0",
-});
-
-server.tool(
-  "get_work_item",
-  "Fetch an Azure DevOps work item by ID",
-  { project: z.string(), id: z.number() },
-  async ({ project, id }) => {
-    const url = `${ORG_URL}/${project}/_apis/wit/workitems/${id}?$expand=all&api-version=7.1`;
-    const res = await fetch(url, { headers: { Authorization: authHeader } });
-    const data = await res.json();
-    return { content: [{ type: "text", text: JSON.stringify(data, null, 2) }] };
-  }
-);
-
-server.tool(
-  "query_work_items",
-  "Run a WIQL query against Azure DevOps work items",
-  { project: z.string(), wiql: z.string() },
-  async ({ project, wiql }) => {
-    const url = `${ORG_URL}/${project}/_apis/wit/wiql?api-version=7.1`;
-    const res = await fetch(url, {
-      method: "POST",
-      headers: { Authorization: authHeader, "Content-Type": "application/json" },
-      body: JSON.stringify({ query: wiql }),
-    });
-    const data = await res.json();
-    return { content: [{ type: "text", text: JSON.stringify(data, null, 2) }] };
-  }
-);
-
-server.tool(
-  "list_projects",
-  "List all projects in the Azure DevOps organization",
-  {},
-  async () => {
-    const url = `${ORG_URL}/_apis/projects?api-version=7.1`;
-    const res = await fetch(url, { headers: { Authorization: authHeader } });
-    const data = await res.json();
-    return { content: [{ type: "text", text: JSON.stringify(data, null, 2) }] };
-  }
-);
-
-const transport = new StdioServerTransport();
-await server.connect(transport);
-```
-
-### Register in Devin
-
-1. Publish your server as an npm package or Docker image
-2. In **Settings > MCP Marketplace > Add Your Own**:
-   - **Transport:** `STDIO`
-   - **Command:** `npx` (or `docker`)
-   - **Arguments:** `-y your-org/azure-devops-mcp-server`
-   - **Environment Variables:** `AZURE_DEVOPS_ORG_URL`, `AZURE_DEVOPS_PAT`
-
-### Remote Server (HTTP Transport)
-
-If you prefer to host the MCP server as a remote endpoint:
-
-1. Deploy the server behind HTTPS (e.g., Azure Container Apps, App Service)
-2. In **Settings > MCP Marketplace > Add Your Own**:
-   - **Transport:** `HTTP`
-   - **Server URL:** `https://your-mcp-server.example.com/mcp`
-   - **Auth Method:** `Auth Header`
-   - **Header Key:** `Authorization`
-   - **Header Value:** `Bearer <your-token>`
-
 ## Creating the PAT
 
 The MCP server authenticates to Azure DevOps using a Personal Access Token. Create one with minimal scopes:
@@ -177,7 +90,6 @@ Once the MCP server is set up, Devin can use it in any session. Examples:
 - **Use a dedicated service account** for the PAT rather than a personal account
 - **Scope the PAT** to the minimum permissions needed (read-only where possible)
 - **Store the PAT as a Devin secret** — never hardcode it in configuration
-- For the custom MCP approach, consider adding rate limiting and audit logging
 
 ## Reference
 
