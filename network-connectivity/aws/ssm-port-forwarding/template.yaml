@@ -335,9 +335,39 @@ Resources:
           }
           NGINXCONF
 
-          # Disable the default server block entirely to avoid port conflicts
-          # (the custom server block in conf.d/ is the only one we need)
-          sed -i '/^[[:space:]]*server {/,/^[[:space:]]*}/d' /etc/nginx/nginx.conf
+          # Remove any default server config shipped by the nginx package,
+          # then write a minimal nginx.conf that only loads conf.d/*.conf
+          rm -f /etc/nginx/conf.d/default.conf
+
+          cat > /etc/nginx/nginx.conf <<'MAINCONF'
+          user nginx;
+          worker_processes auto;
+          error_log /var/log/nginx/error.log notice;
+          pid /run/nginx.pid;
+
+          include /usr/share/nginx/modules/*.conf;
+
+          events {
+              worker_connections 1024;
+          }
+
+          http {
+              log_format main '$remote_addr - $remote_user [$time_local] "$request" '
+                              '$status $body_bytes_sent "$http_referer" '
+                              '"$http_user_agent"';
+              access_log /var/log/nginx/access.log main;
+
+              sendfile on;
+              tcp_nopush on;
+              keepalive_timeout 65;
+              types_hash_max_size 4096;
+              include /etc/nginx/mime.types;
+              default_type application/octet-stream;
+
+              # Load custom server blocks from conf.d/
+              include /etc/nginx/conf.d/*.conf;
+          }
+          MAINCONF
 
           nginx -t
           systemctl enable nginx
