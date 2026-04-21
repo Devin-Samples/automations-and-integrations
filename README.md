@@ -22,7 +22,7 @@ automations-and-integrations/
 │
 ├── ci-cd/                             # CI/CD pipeline integrations
 │   ├── github-actions/                #   GitHub Actions workflows (available)
-│   ├── azure-devops/                  #   Azure DevOps webhooks + pipelines (planned)
+│   ├── azure-devops/                  #   Azure DevOps webhooks + pipelines (available)
 │   ├── gitlab-ci/                     #   GitLab CI/CD templates (planned)
 │   ├── jenkins/                       #   Jenkins pipeline steps (planned)
 │   └── bitbucket/                     #   Bitbucket Pipelines (planned)

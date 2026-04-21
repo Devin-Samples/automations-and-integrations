@@ -7,7 +7,7 @@ Trigger and manage Devin sessions from your CI/CD pipelines. Each subdirectory c
 | Platform | Directory | Description | Status |
 |---|---|---|---|
 | **GitHub Actions** | [`github-actions/`](github-actions/) | Workflow files that trigger Devin sessions from PR events, issue comments, and schedules | Available |
-| **Azure DevOps** | [`azure-devops/`](azure-devops/) | Service hook receivers and reusable Azure Pipelines YAML templates | Planned |
+| **Azure DevOps** | [`azure-devops/`](azure-devops/) | Webhook receiver for work item tag events, MCP server setup for querying ADO | Available |
 | **GitLab CI/CD** | [`gitlab-ci/`](gitlab-ci/) | `.gitlab-ci.yml` job templates and webhook integrations | Planned |
 | **Jenkins** | [`jenkins/`](jenkins/) | Shared library pipeline steps for calling the Devin API from Jenkinsfiles | Planned |
 | **Bitbucket Pipelines** | [`bitbucket/`](bitbucket/) | Bitbucket Pipe and `bitbucket-pipelines.yml` snippets | Planned |
