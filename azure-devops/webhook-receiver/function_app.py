@@ -36,13 +36,17 @@ def get_config():
     return api_key, org_id, trigger_tag
 
 
-def extract_tags(work_item: dict) -> list[str]:
-    """Extract tags from an Azure DevOps work item payload."""
-    fields = work_item.get("fields", {})
-    tags_str = fields.get("System.Tags", "")
+def parse_tags(tags_str: str) -> list[str]:
+    """Parse a semicolon-separated tag string into a list of trimmed tags."""
     if not tags_str:
         return []
     return [t.strip() for t in tags_str.split(";") if t.strip()]
+
+
+def extract_tags(work_item: dict) -> list[str]:
+    """Extract tags from an Azure DevOps work item payload."""
+    fields = work_item.get("fields", {})
+    return parse_tags(fields.get("System.Tags", ""))
 
 
 def has_trigger_tag(tags: list[str], trigger_tag: str) -> bool:
@@ -135,15 +139,40 @@ def devops_webhook(req: func.HttpRequest) -> func.HttpResponse:
             mimetype="application/json",
         )
 
-    tags = extract_tags(work_item)
-    logging.info("Work item #%s tags: %s", work_item_id, tags)
+    if event_type == "workitem.updated":
+        changed_fields = resource.get("fields", {})
+        tags_change = changed_fields.get("System.Tags")
+        if not isinstance(tags_change, dict):
+            logging.info("Work item #%s: System.Tags not changed in this update, skipping", work_item_id)
+            return func.HttpResponse(
+                json.dumps({"status": "skipped", "reason": "System.Tags not changed in this update"}),
+                mimetype="application/json",
+            )
+        old_tags = parse_tags(tags_change.get("oldValue", ""))
+        new_tags = parse_tags(tags_change.get("newValue", ""))
+        if has_trigger_tag(old_tags, trigger_tag):
+            logging.info("Work item #%s: '%s' tag already existed before this update, skipping", work_item_id, trigger_tag)
+            return func.HttpResponse(
+                json.dumps({"status": "skipped", "reason": f"'{trigger_tag}' tag already present before update"}),
+                mimetype="application/json",
+            )
+        if not has_trigger_tag(new_tags, trigger_tag):
+            logging.info("Work item #%s: '%s' tag not in new tags, skipping", work_item_id, trigger_tag)
+            return func.HttpResponse(
+                json.dumps({"status": "skipped", "reason": f"'{trigger_tag}' tag not found in updated tags"}),
+                mimetype="application/json",
+            )
+        tags = new_tags
+    else:
+        tags = extract_tags(work_item)
+        if not has_trigger_tag(tags, trigger_tag):
+            logging.info("Work item #%s does not have '%s' tag, skipping", work_item_id, trigger_tag)
+            return func.HttpResponse(
+                json.dumps({"status": "skipped", "reason": f"'{trigger_tag}' tag not found"}),
+                mimetype="application/json",
+            )
 
-    if not has_trigger_tag(tags, trigger_tag):
-        logging.info("Work item #%s does not have '%s' tag, skipping", work_item_id, trigger_tag)
-        return func.HttpResponse(
-            json.dumps({"status": "skipped", "reason": f"'{trigger_tag}' tag not found"}),
-            mimetype="application/json",
-        )
+    logging.info("Work item #%s tags: %s", work_item_id, tags)
 
     prompt = build_prompt(work_item, work_item_id, work_item_url)
     logging.info("Built prompt for work item #%s: %s", work_item_id, prompt[:200])
