@@ -6,10 +6,22 @@ set -euo pipefail
 # Usage:
 #   ./scripts/test-webhook.sh <webhook-url>
 #
+# Prerequisites:
+#   - WEBHOOK_SECRET environment variable set (same value configured on the
+#     Azure Function)
+#
 # Example:
+#   export WEBHOOK_SECRET="your-shared-secret"
 #   ./scripts/test-webhook.sh https://my-func.azurewebsites.net/api/devops-webhook
 
 WEBHOOK_URL="${1:?Usage: $0 <webhook-url>}"
+
+if [ -z "${WEBHOOK_SECRET:-}" ]; then
+  echo "WARNING: WEBHOOK_SECRET not set. Requests will be sent without authentication."
+  AUTH_HEADER=""
+else
+  AUTH_HEADER="X-Webhook-Secret: $WEBHOOK_SECRET"
+fi
 
 echo "=== Testing Webhook Relay ==="
 echo "URL: $WEBHOOK_URL"
@@ -23,6 +35,7 @@ echo ""
 RESPONSE=$(curl -s -w "\nHTTP_STATUS:%{http_code}" \
   -X POST \
   -H "Content-Type: application/json" \
+  ${AUTH_HEADER:+-H "$AUTH_HEADER"} \
   -d '{
     "eventType": "workitem.updated",
     "resource": {
@@ -31,7 +44,7 @@ RESPONSE=$(curl -s -w "\nHTTP_STATUS:%{http_code}" \
       "fields": {
         "System.Tags": {
           "oldValue": "",
-          "newValue": "Devin:Discovery"
+          "newValue": "Devin:Implementation"
         }
       },
       "revision": {
@@ -40,7 +53,7 @@ RESPONSE=$(curl -s -w "\nHTTP_STATUS:%{http_code}" \
           "System.WorkItemType": "User Story",
           "System.Title": "Sample work item for testing",
           "System.Description": "This is a test work item to verify the webhook relay.",
-          "System.Tags": "Devin:Discovery"
+          "System.Tags": "Devin:Implementation"
         }
       },
       "_links": {

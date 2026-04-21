@@ -3,15 +3,19 @@ Azure Function: Azure DevOps Service Hook -> Devin API Relay
 
 Receives webhook payloads from Azure DevOps service hooks when work items
 are updated. If the work item has the configured trigger tag (default:
-"Devin:Discovery"), it creates a new Devin session via the Devin API
+"Devin:Implementation"), it creates a new Devin session via the Devin API
 with the work item's title and description as the prompt.
 
 Environment variables:
-    DEVIN_API_KEY   - Devin API key (starts with "cog_")
-    DEVIN_ORG_ID    - Devin organization ID (starts with "org-")
-    DEVIN_TAG       - (Optional) Tag to trigger on. Default: "Devin:Discovery"
+    DEVIN_API_KEY    - Devin API key (starts with "cog_")
+    DEVIN_ORG_ID     - Devin organization ID (starts with "org-")
+    DEVIN_TAG        - (Optional) Tag to trigger on. Default: "Devin:Implementation"
+    WEBHOOK_SECRET   - Shared secret for authenticating incoming webhooks.
+                       Must match the X-Webhook-Secret header sent by the
+                       Azure DevOps service hook.
 """
 
+import hmac
 import json
 import logging
 import os
@@ -23,7 +27,7 @@ import requests
 app = func.FunctionApp()
 
 DEVIN_API_BASE = "https://api.devin.ai/v3"
-DEFAULT_TAG = "Devin:Discovery"
+DEFAULT_TAG = "Devin:Implementation"
 
 
 def get_config():
@@ -33,7 +37,16 @@ def get_config():
     if not api_key or not org_id:
         raise ValueError("DEVIN_API_KEY and DEVIN_ORG_ID must be set")
     trigger_tag = os.environ.get("DEVIN_TAG", DEFAULT_TAG)
-    return api_key, org_id, trigger_tag
+    webhook_secret = os.environ.get("WEBHOOK_SECRET", "")
+    return api_key, org_id, trigger_tag, webhook_secret
+
+
+def verify_webhook_secret(req: func.HttpRequest, expected_secret: str) -> bool:
+    """Verify the X-Webhook-Secret header matches the configured secret."""
+    if not expected_secret:
+        return True
+    provided = req.headers.get("X-Webhook-Secret", "")
+    return hmac.compare_digest(provided, expected_secret)
 
 
 def parse_tags(tags_str: str) -> list[str]:
@@ -102,6 +115,24 @@ def devops_webhook(req: func.HttpRequest) -> func.HttpResponse:
     logging.info("Received Azure DevOps webhook request")
 
     try:
+        api_key, org_id, trigger_tag, webhook_secret = get_config()
+    except ValueError as e:
+        logging.error("Configuration error: %s", e)
+        return func.HttpResponse(
+            json.dumps({"status": "error", "message": str(e)}),
+            status_code=500,
+            mimetype="application/json",
+        )
+
+    if not verify_webhook_secret(req, webhook_secret):
+        logging.warning("Webhook secret verification failed")
+        return func.HttpResponse(
+            json.dumps({"status": "error", "message": "Invalid or missing X-Webhook-Secret header"}),
+            status_code=401,
+            mimetype="application/json",
+        )
+
+    try:
         body = req.get_json()
     except ValueError:
         logging.error("Invalid JSON payload")
@@ -128,16 +159,6 @@ def devops_webhook(req: func.HttpRequest) -> func.HttpResponse:
     work_item_url = resource.get("_links", {}).get("html", {}).get("href", "")
     if not work_item_url:
         work_item_url = resource.get("url", "")
-
-    try:
-        api_key, org_id, trigger_tag = get_config()
-    except ValueError as e:
-        logging.error("Configuration error: %s", e)
-        return func.HttpResponse(
-            json.dumps({"status": "error", "message": str(e)}),
-            status_code=500,
-            mimetype="application/json",
-        )
 
     if event_type == "workitem.updated":
         changed_fields = resource.get("fields", {})
