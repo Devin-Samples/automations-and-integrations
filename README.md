@@ -2,7 +2,7 @@
 
 > **Reference Only / Community-Maintained** — This repository is not an official Cognition AI product. It is a community-contributed collection of sample automations and integration patterns maintained by the [Devin-Samples](https://github.com/Devin-Samples) organization. It is not supported, endorsed, or guaranteed by Cognition AI's core engineering team.
 
-Sample GitHub Actions, webhook receivers, pipeline templates, and deployable infrastructure for integrating [Devin](https://devin.ai) into your software development lifecycle (SDLC).
+Sample workflows, webhook receivers, pipeline templates, network connectivity patterns, and deployable infrastructure for integrating [Devin](https://devin.ai) into your software development lifecycle (SDLC).
 
 ---
 
@@ -20,68 +20,61 @@ Sample GitHub Actions, webhook receivers, pipeline templates, and deployable inf
 ```
 automations-and-integrations/
 │
-├── github-actions/              # GitHub Actions workflows for Devin
-│   └── examples/                #   Sample .yml workflow files
+├── ci-cd/                             # CI/CD pipeline integrations
+│   ├── github-actions/                #   GitHub Actions workflows (available)
+│   ├── azure-devops/                  #   Azure DevOps webhooks + pipelines (planned)
+│   ├── gitlab-ci/                     #   GitLab CI/CD templates (planned)
+│   ├── jenkins/                       #   Jenkins pipeline steps (planned)
+│   └── bitbucket/                     #   Bitbucket Pipelines (planned)
 │
-├── azure-devops/                # Azure DevOps integration
-│   ├── webhook-receiver/        #   Service hook event receiver (Azure Function)
-│   └── mcp-setup/               #   MCP server setup guide for querying ADO
+├── network-connectivity/              # Private network access patterns
+│   ├── aws/                           #   AWS connectivity patterns
+│   │   ├── ssm-port-forwarding/       #     SSM tunnel to private VPC resources (available)
+│   │   ├── client-vpn/                #     Full subnet VPN access (planned)
+│   │   └── privatelink/               #     Service-to-service connectivity (planned)
+│   ├── azure/                         #   Azure connectivity patterns
+│   │   ├── bastion-tunneling/         #     Azure Bastion native tunneling (planned)
+│   │   ├── private-endpoints/         #     Private IP for PaaS services (planned)
+│   │   └── vpn-gateway/               #     Point-to-site / site-to-site VPN (planned)
+│   └── gcp/                           #   GCP connectivity patterns
+│       ├── iap-tunneling/             #     IAP TCP forwarding (planned)
+│       └── private-service-connect/   #     Private IP for Google APIs (planned)
 │
-├── jira/                        # Jira webhook integration (planned)
-│   └── webhook-receiver/
+├── issue-tracking/                    # Issue tracker integrations
+│   └── jira/                          #   Jira webhook receiver (planned)
+│                                      #   Linear, ServiceNow (planned)
 │
-├── slack/                       # Slack bot / slash commands (planned)
-│   └── bot/
+├── messaging/                         # Team messaging integrations
+│   └── slack/                         #   Slack bot and slash commands (planned)
+│                                      #   Microsoft Teams (planned)
 │
-├── jenkins/                     # Jenkins pipeline plugin (planned)
-│   └── pipeline-plugin/
+├── observability/                     # Alert-driven Devin sessions
+│   ├── datadog/                       #   Datadog webhook integration (planned)
+│   └── newrelic/                      #   New Relic webhook integration (planned)
 │
-├── gitlab-ci/                   # GitLab CI/CD templates (planned)
-│   └── templates/
-│
-├── bitbucket/                   # Bitbucket Pipelines integration (planned)
-│   └── pipelines/
-│
-├── observability/               # Alert-driven Devin sessions (planned)
-│   ├── datadog/
-│   └── newrelic/
-│
-├── incident-response/           # Incident auto-triage (planned)
-│   ├── pagerduty/
-│   └── opsgenie/
-│
-├── issue-trackers/              # Issue tracker integrations (planned)
-│   ├── linear/
-│   └── servicenow/
-│
-├── infrastructure/              # Deployable IaC for hosting integrations
-│   ├── terraform/               #   Terraform modules
-│   └── cloudformation/          #   AWS CloudFormation templates
+├── incident-response/                 # Incident auto-triage
+│   ├── pagerduty/                     #   PagerDuty webhook integration (planned)
+│   └── opsgenie/                      #   Opsgenie webhook integration (planned)
 │
 ├── docs/
-│   ├── setup-guide/             # Step-by-step configuration guides
-│   └── architecture/            # Reference architecture diagrams
+│   ├── setup-guide/                   #   Step-by-step configuration guides
+│   └── architecture/                  #   Reference architecture diagrams
 │
 ├── LICENSE
 ├── NOTICE
 └── README.md
 ```
 
-## Integrations Roadmap
+## Integration Categories
 
-| Integration | Directory | Description | Status |
+| Category | Directory | Description | Status |
 |---|---|---|---|
-| **GitHub Actions** | [`github-actions/`](github-actions/) | Trigger Devin sessions from PR events, issue comments, scheduled workflows | Available |
-| **Azure DevOps** | [`azure-devops/`](azure-devops/) | Webhook receiver for work item tag events, MCP server setup for querying ADO | Available |
-| **Jira** | [`jira/`](jira/) | Trigger Devin sessions from Jira issue transitions and webhooks | Planned |
-| **Slack** | [`slack/`](slack/) | Slash commands and bot integration to create/monitor Devin sessions | Planned |
-| **Jenkins** | [`jenkins/`](jenkins/) | Pipeline steps and webhook-based triggers for Devin | Planned |
-| **GitLab CI/CD** | [`gitlab-ci/`](gitlab-ci/) | `.gitlab-ci.yml` templates and webhook integrations | Planned |
-| **Bitbucket Pipelines** | [`bitbucket/`](bitbucket/) | Pipe and webhook integration for Devin session management | Planned |
-| **Datadog / New Relic** | [`observability/`](observability/) | Alert-driven Devin sessions for automated log analysis and remediation | Planned |
-| **PagerDuty / Opsgenie** | [`incident-response/`](incident-response/) | Auto-triage incidents by spawning Devin sessions for investigation | Planned |
-| **Linear / ServiceNow** | [`issue-trackers/`](issue-trackers/) | Trigger Devin sessions from issue tracker transitions | Planned |
-| **Terraform / CloudFormation** | [`infrastructure/`](infrastructure/) | Deployable IaC for hosting webhook receivers and supporting infra | Planned |
+| **CI/CD** | [`ci-cd/`](ci-cd/) | Trigger Devin from pull requests, issue comments, schedules, and pipeline events | GitHub Actions & Azure DevOps available; others planned |
+| **Network Connectivity** | [`network-connectivity/`](network-connectivity/) | Connect Devin to private resources in AWS, Azure, and GCP VPCs | AWS SSM port-forwarding available; others planned |
+| **Issue Tracking** | [`issue-tracking/`](issue-tracking/) | Trigger Devin from issue transitions in Jira, Linear, ServiceNow | Planned |
+| **Messaging** | [`messaging/`](messaging/) | Slash commands and bots for Slack, Microsoft Teams | Planned |
+| **Observability** | [`observability/`](observability/) | Alert-driven Devin sessions from Datadog, New Relic | Planned |
+| **Incident Response** | [`incident-response/`](incident-response/) | Auto-triage incidents from PagerDuty, Opsgenie | Planned |
 
 ## Getting Started
 
@@ -92,12 +85,12 @@ automations-and-integrations/
 
 ### Quick Start
 
-1. Browse the integration directory you're interested in
-2. Follow the README in that directory for setup instructions
-3. Configure your Devin API key as a secret in your CI/CD platform
+1. Browse the category directory for the integration you need
+2. Follow the README in the specific platform directory for setup instructions
+3. Configure your Devin API key and any required credentials
 4. Customize the sample to fit your workflow
 
-For infrastructure deployment, see the [`infrastructure/`](infrastructure/) directory and the [setup guide](docs/setup-guide/).
+**New to private network access?** Start with the [Network Connectivity decision guide](network-connectivity/) to find the right pattern for your cloud provider and use case.
 
 ## Contributing
 
