@@ -23,9 +23,9 @@ automations-and-integrations/
 ├── github-actions/              # GitHub Actions workflows for Devin
 │   └── examples/                #   Sample .yml workflow files
 │
-├── azure-devops/                # Azure DevOps integration (planned)
-│   ├── webhook-receiver/        #   Service hook event receiver
-│   └── pipeline-templates/      #   Reusable Azure Pipelines YAML
+├── azure-devops/                # Azure DevOps integration
+│   ├── webhook-receiver/        #   Service hook event receiver (Azure Function)
+│   └── mcp-setup/               #   MCP server setup guide for querying ADO
 │
 ├── jira/                        # Jira webhook integration (planned)
 │   └── webhook-receiver/
@@ -72,7 +72,7 @@ automations-and-integrations/
 | Integration | Directory | Description | Status |
 |---|---|---|---|
 | **GitHub Actions** | [`github-actions/`](github-actions/) | Trigger Devin sessions from PR events, issue comments, scheduled workflows | Available |
-| **Azure DevOps** | [`azure-devops/`](azure-devops/) | Webhook receiver for work item & PR events, pipeline templates | Planned |
+| **Azure DevOps** | [`azure-devops/`](azure-devops/) | Webhook receiver for work item tag events, MCP server setup for querying ADO | Available |
 | **Jira** | [`jira/`](jira/) | Trigger Devin sessions from Jira issue transitions and webhooks | Planned |
 | **Slack** | [`slack/`](slack/) | Slash commands and bot integration to create/monitor Devin sessions | Planned |
 | **Jenkins** | [`jenkins/`](jenkins/) | Pipeline steps and webhook-based triggers for Devin | Planned |
