@@ -1,0 +1,32 @@
+# Sample: Run Devin on a schedule for recurring maintenance tasks
+#
+# This workflow triggers a Devin session on a cron schedule — useful for
+# dependency updates, security audits, documentation freshness checks, etc.
+#
+# Prerequisites:
+#   - Repository secret DEVIN_API_KEY with a valid Devin API key
+#
+# Reference: https://docs.devin.ai/api-reference/overview
+
+name: Scheduled Devin Maintenance
+
+on:
+  schedule:
+    - cron: '0 9 * * 1'  # Every Monday at 9:00 UTC
+
+  workflow_dispatch:  # Allow manual trigger
+
+jobs:
+  maintenance:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create Devin session for maintenance
+        run: |
+          curl -s -X POST "https://api.devin.ai/v1/sessions" \
+            -H "Authorization: Bearer ${{ secrets.DEVIN_API_KEY }}" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "prompt": "Check for outdated dependencies in ${{ github.repository }} and open a PR to update them."
+            }'
+        # TODO: Customize the prompt and session options for your use case
+        # See https://docs.devin.ai/api-reference/overview for full schema

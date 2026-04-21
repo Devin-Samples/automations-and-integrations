@@ -1,0 +1,38 @@
+# Sample: Trigger a Devin session from an issue comment
+#
+# When a user posts "/devin <prompt>" as an issue comment, this workflow
+# creates a new Devin session with the comment body as the prompt.
+#
+# Prerequisites:
+#   - Repository secret DEVIN_API_KEY with a valid Devin API key
+#
+# Reference: https://docs.devin.ai/api-reference/overview
+
+name: Trigger Devin from Issue Comment
+
+on:
+  issue_comment:
+    types: [created]
+
+jobs:
+  trigger-devin:
+    if: startsWith(github.event.comment.body, '/devin ')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Extract prompt from comment
+        id: extract
+        run: |
+          PROMPT="${{ github.event.comment.body }}"
+          PROMPT="${PROMPT#/devin }"
+          echo "prompt=${PROMPT}" >> "$GITHUB_OUTPUT"
+
+      - name: Create Devin session
+        run: |
+          curl -s -X POST "https://api.devin.ai/v1/sessions" \
+            -H "Authorization: Bearer ${{ secrets.DEVIN_API_KEY }}" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "prompt": "${{ steps.extract.outputs.prompt }}"
+            }'
+        # TODO: Customize with your preferred session options
+        # See https://docs.devin.ai/api-reference/overview for full schema

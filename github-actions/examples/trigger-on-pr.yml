@@ -1,0 +1,30 @@
+# Sample: Trigger a Devin session on pull request events
+#
+# When a PR is opened or review is requested, this workflow creates a
+# Devin session to review the changes.
+#
+# Prerequisites:
+#   - Repository secret DEVIN_API_KEY with a valid Devin API key
+#
+# Reference: https://docs.devin.ai/api-reference/overview
+
+name: Trigger Devin on PR
+
+on:
+  pull_request:
+    types: [opened, review_requested]
+
+jobs:
+  devin-review:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create Devin session for PR review
+        run: |
+          curl -s -X POST "https://api.devin.ai/v1/sessions" \
+            -H "Authorization: Bearer ${{ secrets.DEVIN_API_KEY }}" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "prompt": "Review pull request #${{ github.event.pull_request.number }} in ${{ github.repository }}: ${{ github.event.pull_request.title }}"
+            }'
+        # TODO: Customize with your preferred session options
+        # See https://docs.devin.ai/api-reference/overview for full schema
