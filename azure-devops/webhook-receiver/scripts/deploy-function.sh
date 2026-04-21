@@ -8,12 +8,13 @@ set -euo pipefail
 #
 # Prerequisites:
 #   - Azure CLI authenticated (`az login`)
-#   - DEVIN_API_KEY, DEVIN_ORG_ID, and WEBHOOK_SECRET environment variables set
+#   - DEVIN_API_KEY and DEVIN_ORG_ID environment variables set
+#   - (Optional) WEBHOOK_SECRET for authenticating incoming webhooks
 #
 # Example:
 #   export DEVIN_API_KEY="cog_..."
 #   export DEVIN_ORG_ID="org-..."
-#   export WEBHOOK_SECRET="$(openssl rand -hex 32)"
+#   export WEBHOOK_SECRET="$(openssl rand -hex 32)"  # optional but recommended
 #   ./scripts/deploy-function.sh rg-devin-integration devin-webhook-relay eastus
 
 RESOURCE_GROUP="${1:?Usage: $0 <resource-group> <function-app-name> [location]}"
@@ -56,15 +57,18 @@ az functionapp create \
   --output none
 
 echo "Configuring app settings..."
-if [ -z "${DEVIN_API_KEY:-}" ] || [ -z "${DEVIN_ORG_ID:-}" ] || [ -z "${WEBHOOK_SECRET:-}" ]; then
-  echo "WARNING: DEVIN_API_KEY, DEVIN_ORG_ID, and/or WEBHOOK_SECRET not set."
+if [ -z "${DEVIN_API_KEY:-}" ] || [ -z "${DEVIN_ORG_ID:-}" ]; then
+  echo "WARNING: DEVIN_API_KEY and/or DEVIN_ORG_ID not set."
   echo "Set them manually:"
   echo "  az functionapp config appsettings set \\"
   echo "    --name $FUNC_APP_NAME \\"
   echo "    --resource-group $RESOURCE_GROUP \\"
-  echo "    --settings DEVIN_API_KEY=<key> DEVIN_ORG_ID=<org-id> WEBHOOK_SECRET=<secret>"
+  echo "    --settings DEVIN_API_KEY=<key> DEVIN_ORG_ID=<org-id>"
 else
-  SETTINGS=("DEVIN_API_KEY=$DEVIN_API_KEY" "DEVIN_ORG_ID=$DEVIN_ORG_ID" "WEBHOOK_SECRET=$WEBHOOK_SECRET")
+  SETTINGS=("DEVIN_API_KEY=$DEVIN_API_KEY" "DEVIN_ORG_ID=$DEVIN_ORG_ID")
+  if [ -n "${WEBHOOK_SECRET:-}" ]; then
+    SETTINGS+=("WEBHOOK_SECRET=$WEBHOOK_SECRET")
+  fi
   if [ -n "${DEVIN_TAG:-}" ]; then
     SETTINGS+=("DEVIN_TAG=$DEVIN_TAG")
   fi
