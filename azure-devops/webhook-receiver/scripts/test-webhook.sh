@@ -81,6 +81,7 @@ echo ""
 RESPONSE2=$(curl -s -w "\nHTTP_STATUS:%{http_code}" \
   -X POST \
   -H "Content-Type: application/json" \
+  ${AUTH_HEADER:+-H "$AUTH_HEADER"} \
   -d '{
     "eventType": "workitem.updated",
     "resource": {
@@ -97,7 +98,7 @@ RESPONSE2=$(curl -s -w "\nHTTP_STATUS:%{http_code}" \
         "fields": {
           "System.WorkItemType": "User Story",
           "System.Title": "Sample work item for testing",
-          "System.Tags": "Devin:Discovery"
+          "System.Tags": "Devin:Implementation"
         }
       }
     }
@@ -120,6 +121,7 @@ echo ""
 RESPONSE3=$(curl -s -w "\nHTTP_STATUS:%{http_code}" \
   -X POST \
   -H "Content-Type: application/json" \
+  ${AUTH_HEADER:+-H "$AUTH_HEADER"} \
   -d '{
     "eventType": "workitem.updated",
     "resource": {
@@ -127,8 +129,8 @@ RESPONSE3=$(curl -s -w "\nHTTP_STATUS:%{http_code}" \
       "rev": 5,
       "fields": {
         "System.Tags": {
-          "oldValue": "Devin:Discovery",
-          "newValue": "Devin:Discovery; Priority"
+          "oldValue": "Devin:Implementation",
+          "newValue": "Devin:Implementation; Priority"
         }
       },
       "revision": {
@@ -136,7 +138,7 @@ RESPONSE3=$(curl -s -w "\nHTTP_STATUS:%{http_code}" \
         "fields": {
           "System.WorkItemType": "User Story",
           "System.Title": "Sample work item for testing",
-          "System.Tags": "Devin:Discovery; Priority"
+          "System.Tags": "Devin:Implementation; Priority"
         }
       }
     }
@@ -159,6 +161,7 @@ echo ""
 RESPONSE4=$(curl -s -w "\nHTTP_STATUS:%{http_code}" \
   -X POST \
   -H "Content-Type: application/json" \
+  ${AUTH_HEADER:+-H "$AUTH_HEADER"} \
   -d '{"eventType": "build.complete", "resource": {}}' \
   "$WEBHOOK_URL")
 

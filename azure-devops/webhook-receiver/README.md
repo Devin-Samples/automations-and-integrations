@@ -1,6 +1,6 @@
 # Azure DevOps Webhook Receiver for Devin
 
-An Azure Function that receives [Azure DevOps service hook](https://learn.microsoft.com/en-us/azure/devops/service-hooks/overview) payloads and creates [Devin](https://devin.ai) sessions when a work item is tagged with a configurable trigger tag (default: `Devin:Discovery`).
+An Azure Function that receives [Azure DevOps service hook](https://learn.microsoft.com/en-us/azure/devops/service-hooks/overview) payloads and creates [Devin](https://devin.ai) sessions when a work item is tagged with a configurable trigger tag (default: `Devin:Implementation`).
 
 ## Architecture
 
@@ -9,9 +9,10 @@ Azure DevOps                     Azure Function                  Devin API
 ┌─────────────┐   HTTP POST     ┌──────────────────┐  POST     ┌─────────────┐
 │ Work item    │ ─────────────> │ devops-webhook    │ ───────> │ /v3/.../     │
 │ tagged with  │  service hook  │                    │          │  sessions    │
-│ Devin:       │                │ 1. Parse payload   │          │              │
-│ Discovery    │                │ 2. Check tag       │          │ Creates new  │
-│              │                │ 3. Build prompt    │          │ Devin session│
+│ Devin:       │                │ 1. Verify secret   │          │              │
+│ Implementa-  │                │ 2. Parse payload   │          │ Creates new  │
+│ tion         │                │ 3. Check tag       │          │              │
+│              │                │ 4. Build prompt    │          │ Devin session│
 └─────────────┘                └──────────────────┘          └─────────────┘
 ```
 
@@ -75,13 +76,13 @@ Or configure manually:
 ```
 
 This sends three simulated payloads:
-- **With** `Devin:Discovery` tag -> expects `session_created`
+- **With** `Devin:Implementation` tag -> expects `session_created`
 - **Without** tag -> expects `skipped`
 - **Non-work-item event** -> expects `ignored`
 
 ### 4. Trigger End-to-End
 
-In Azure DevOps, add the tag `Devin:Discovery` to any work item. A Devin session will be created with the work item's title and description as the prompt.
+In Azure DevOps, add the tag `Devin:Implementation` to any work item. A Devin session will be created with the work item's title and description as the prompt.
 
 ## File Structure
 
@@ -103,7 +104,8 @@ webhook-receiver/
 |---|---|---|---|
 | `DEVIN_API_KEY` | Yes | — | Devin API key (starts with `cog_`) |
 | `DEVIN_ORG_ID` | Yes | — | Devin organization ID (starts with `org-`) |
-| `DEVIN_TAG` | No | `Devin:Discovery` | Tag that triggers session creation (case-insensitive) |
+| `DEVIN_TAG` | No | `Devin:Implementation` | Tag that triggers session creation (case-insensitive) |
+| `WEBHOOK_SECRET` | No | — | Shared secret for authenticating incoming webhooks. Must match the `X-Webhook-Secret` header sent by the service hook. |
 
 ### Customizing the Trigger Tag
 
@@ -118,11 +120,21 @@ az functionapp config appsettings set \
 
 ## Security Considerations
 
-> **Warning:** The default deployment uses `AuthLevel.ANONYMOUS` (no function key required). This means anyone who discovers the URL can trigger Devin session creation. For production use, consider:
->
-> - Adding a shared secret header validated in the function code
-> - Using Azure API Management in front of the function
-> - Restricting inbound IPs to Azure DevOps service hook IPs
+The function supports an optional `WEBHOOK_SECRET` for authenticating incoming requests. When set, the function verifies the `X-Webhook-Secret` header using constant-time comparison.
+
+To enable:
+
+```bash
+# Set a random secret on the function app
+az functionapp config appsettings set \
+  --name devin-webhook-relay \
+  --resource-group rg-devin-integration \
+  --settings WEBHOOK_SECRET="$(openssl rand -hex 32)"
+```
+
+Then configure the same secret as an HTTP header in your Azure DevOps service hook.
+
+> **Note:** If `WEBHOOK_SECRET` is not set, the endpoint accepts all requests. For production use, always set a webhook secret and consider restricting inbound IPs to Azure DevOps service hook IPs.
 
 ## Devin API Reference
 
