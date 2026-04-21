@@ -16,9 +16,11 @@ Devin's [native Azure DevOps integration](https://docs.devin.ai/enterprise/integ
 
 An MCP server bridges this gap by exposing the Azure DevOps REST API to Devin as callable tools.
 
-## Option A: Community MCP Server (Recommended)
+## Option A: Microsoft MCP Server (Recommended)
 
-Use the open-source [`azure-devops-mcp`](https://github.com/nicepkg/azure-devops-mcp) server, which wraps the Azure DevOps REST API as MCP tools.
+Use the official [`@azure-devops/mcp`](https://github.com/microsoft/azure-devops-mcp) server from Microsoft, which wraps the Azure DevOps REST API as MCP tools.
+
+> **Note:** Microsoft also offers a [Remote MCP Server](https://learn.microsoft.com/en-us/azure/devops/mcp-server/remote-mcp-server) (public preview) that requires no local installation. See the Microsoft repo for details.
 
 ### Setup in Devin
 
@@ -30,7 +32,7 @@ Use the open-source [`azure-devops-mcp`](https://github.com/nicepkg/azure-devops
    - **Transport:** `STDIO`
 4. Configure the STDIO fields:
    - **Command:** `npx`
-   - **Arguments:** `-y azure-devops-mcp`
+   - **Arguments:** `-y @azure-devops/mcp YourOrgName`
    - **Environment Variables:**
      | Key | Value |
      |---|---|
@@ -182,4 +184,4 @@ Once the MCP server is set up, Devin can use it in any session. Examples:
 - [Devin MCP Documentation](https://docs.devin.ai/work-with-devin/mcp)
 - [Azure DevOps REST API](https://learn.microsoft.com/en-us/rest/api/azure/devops/)
 - [Model Context Protocol Specification](https://modelcontextprotocol.io/)
-- [`azure-devops-mcp` (Community)](https://github.com/nicepkg/azure-devops-mcp)
+- [`@azure-devops/mcp` (Microsoft)](https://github.com/microsoft/azure-devops-mcp)
