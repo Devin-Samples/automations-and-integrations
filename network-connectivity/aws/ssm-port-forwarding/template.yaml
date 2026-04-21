@@ -335,9 +335,9 @@ Resources:
           }
           NGINXCONF
 
-          # Disable the default server on port 80 to avoid conflicts
-          sed -E -i 's/listen([[:space:]]+)80([; ])/listen\18080\2/' /etc/nginx/nginx.conf
-          sed -E -i 's/listen([[:space:]]+)\[::\]:80([; ])/listen\1[::]:8080\2/' /etc/nginx/nginx.conf
+          # Disable the default server block entirely to avoid port conflicts
+          # (the custom server block in conf.d/ is the only one we need)
+          sed -i '/^[[:space:]]*server {/,/^[[:space:]]*}/d' /etc/nginx/nginx.conf
 
           nginx -t
           systemctl enable nginx
