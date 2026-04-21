@@ -25,7 +25,7 @@ Two complementary patterns for integrating [Devin](https://devin.ai) with [Azure
                     └─────────────────────┘
 ```
 
-- **Webhook Receiver (push):** When a work item is tagged with `Devin:Discovery`, Azure DevOps fires a service hook that triggers the webhook receiver, which creates a new Devin session with the work item details as the prompt.
+- **Webhook Receiver (push):** When a work item is tagged with `Devin:Implementation`, Azure DevOps fires a service hook that triggers the webhook receiver, which creates a new Devin session with the work item details as the prompt.
 
 - **MCP Server (pull):** During any session, Devin can query Azure DevOps on demand — fetching work item details, running WIQL queries, listing pipelines, etc. — using MCP tools.
 
@@ -37,7 +37,7 @@ Two complementary patterns for integrating [Devin](https://devin.ai) with [Azure
 
 ## Use Cases
 
-- Trigger a Devin session when a work item is tagged (e.g., `Devin:Discovery`)
+- Trigger a Devin session when a work item is tagged (e.g., `Devin:Implementation`)
 - Let Devin query work item details, board state, and pipeline status during sessions
 - Kick off Devin-powered code review when a pull request is created
 - Run Devin for automated release notes generation on pipeline completion
