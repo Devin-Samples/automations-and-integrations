@@ -1,0 +1,491 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: >
+  Private Network Access via SSM Port Forwarding — Provisions a fully private
+  VPC (no IGW, no NAT) with an EC2 relay instance, VPC Endpoints for AWS
+  Systems Manager, and a fine-grained IAM user scoped to port-forwarding only.
+  Use this to give Devin (or any external client) secure tunnel access to
+  private resources without opening any inbound network paths.
+
+  Deploy as-is to validate the pattern with the built-in mock server, or set
+  EnableMockServer=false and point to your own private endpoint.
+
+# ---------------------------------------------------------------------------
+# Parameters
+# ---------------------------------------------------------------------------
+Parameters:
+  EnvironmentName:
+    Type: String
+    Default: ssm-private-access
+    Description: >
+      Prefix applied to all resource names. Use a descriptive name for your
+      environment (e.g., devin-prod, devin-staging).
+
+  VpcCidr:
+    Type: String
+    Default: 10.200.0.0/16
+    Description: CIDR block for the VPC.
+
+  PrivateSubnetACidr:
+    Type: String
+    Default: 10.200.1.0/24
+    Description: CIDR block for private subnet in the first AZ.
+
+  PrivateSubnetBCidr:
+    Type: String
+    Default: 10.200.2.0/24
+    Description: CIDR block for private subnet in the second AZ.
+
+  InstanceType:
+    Type: String
+    Default: t3.micro
+    Description: EC2 instance type for the relay box.
+
+  LatestAmiId:
+    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
+    Default: /aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64
+    Description: >
+      SSM Parameter path resolving to the latest Amazon Linux 2023 AMI.
+      The SSM agent is pre-installed on this AMI.
+
+  TargetPort:
+    Type: Number
+    Default: 8081
+    Description: >
+      Port that the private service listens on inside the relay box.
+      When EnableMockServer is true, nginx is configured to listen on this port.
+      When false, you are responsible for routing traffic to your actual service.
+
+  EnableMockServer:
+    Type: String
+    Default: "true"
+    AllowedValues: ["true", "false"]
+    Description: >
+      Set to true to install a mock HTTP server (nginx) on the relay box for
+      testing the connectivity pattern end-to-end. Set to false if the relay
+      box will proxy to an existing private service.
+
+Conditions:
+  ShouldEnableMockServer: !Equals [!Ref EnableMockServer, "true"]
+
+# ---------------------------------------------------------------------------
+# Resources
+# ---------------------------------------------------------------------------
+Resources:
+
+  # =========================================================================
+  # 1. VPC — completely private, NO Internet Gateway
+  # =========================================================================
+  Vpc:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: !Ref VpcCidr
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      Tags:
+        - Key: Name
+          Value: !Sub "${EnvironmentName}-vpc"
+
+  PrivateSubnetA:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref Vpc
+      CidrBlock: !Ref PrivateSubnetACidr
+      AvailabilityZone: !Select [0, !GetAZs ""]
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value: !Sub "${EnvironmentName}-private-a"
+
+  PrivateSubnetB:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref Vpc
+      CidrBlock: !Ref PrivateSubnetBCidr
+      AvailabilityZone: !Select [1, !GetAZs ""]
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value: !Sub "${EnvironmentName}-private-b"
+
+  # Route table — local routes only (no NAT, no IGW)
+  PrivateRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref Vpc
+      Tags:
+        - Key: Name
+          Value: !Sub "${EnvironmentName}-private-rt"
+
+  PrivateSubnetARouteAssoc:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PrivateSubnetA
+      RouteTableId: !Ref PrivateRouteTable
+
+  PrivateSubnetBRouteAssoc:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PrivateSubnetB
+      RouteTableId: !Ref PrivateRouteTable
+
+  # =========================================================================
+  # 2. Security Groups
+  # =========================================================================
+
+  # SG for VPC Endpoints — allows HTTPS from within the VPC
+  VpcEndpointSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Allow HTTPS from VPC CIDR to SSM VPC Endpoints
+      VpcId: !Ref Vpc
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: !Ref VpcCidr
+          Description: HTTPS from VPC CIDR for SSM endpoints
+      Tags:
+        - Key: Name
+          Value: !Sub "${EnvironmentName}-vpce-sg"
+
+  # SG for the Relay EC2 — NO ingress from internet
+  RelaySecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Relay box - no internet ingress - target port from VPC only
+      VpcId: !Ref Vpc
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: !Ref TargetPort
+          ToPort: !Ref TargetPort
+          CidrIp: !Ref VpcCidr
+          Description: Target service port from within VPC only
+      Tags:
+        - Key: Name
+          Value: !Sub "${EnvironmentName}-relay-sg"
+
+  # =========================================================================
+  # 3a. S3 Gateway Endpoint — required for dnf/yum package installation
+  #     (Amazon Linux repos are hosted on S3)
+  # =========================================================================
+  S3GatewayEndpoint:
+    Type: AWS::EC2::VPCEndpoint
+    Properties:
+      VpcId: !Ref Vpc
+      ServiceName: !Sub "com.amazonaws.${AWS::Region}.s3"
+      VpcEndpointType: Gateway
+      RouteTableIds:
+        - !Ref PrivateRouteTable
+
+  # =========================================================================
+  # 3b. VPC Endpoints for SSM (Interface type)
+  #     These allow the EC2 instance to register with SSM without internet.
+  # =========================================================================
+  SsmEndpoint:
+    Type: AWS::EC2::VPCEndpoint
+    Properties:
+      VpcId: !Ref Vpc
+      ServiceName: !Sub "com.amazonaws.${AWS::Region}.ssm"
+      VpcEndpointType: Interface
+      PrivateDnsEnabled: true
+      SubnetIds:
+        - !Ref PrivateSubnetA
+        - !Ref PrivateSubnetB
+      SecurityGroupIds:
+        - !Ref VpcEndpointSecurityGroup
+
+  SsmMessagesEndpoint:
+    Type: AWS::EC2::VPCEndpoint
+    Properties:
+      VpcId: !Ref Vpc
+      ServiceName: !Sub "com.amazonaws.${AWS::Region}.ssmmessages"
+      VpcEndpointType: Interface
+      PrivateDnsEnabled: true
+      SubnetIds:
+        - !Ref PrivateSubnetA
+        - !Ref PrivateSubnetB
+      SecurityGroupIds:
+        - !Ref VpcEndpointSecurityGroup
+
+  Ec2MessagesEndpoint:
+    Type: AWS::EC2::VPCEndpoint
+    Properties:
+      VpcId: !Ref Vpc
+      ServiceName: !Sub "com.amazonaws.${AWS::Region}.ec2messages"
+      VpcEndpointType: Interface
+      PrivateDnsEnabled: true
+      SubnetIds:
+        - !Ref PrivateSubnetA
+        - !Ref PrivateSubnetB
+      SecurityGroupIds:
+        - !Ref VpcEndpointSecurityGroup
+
+  # =========================================================================
+  # 4. IAM Role + Instance Profile for the EC2 relay box
+  # =========================================================================
+  RelayInstanceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "${EnvironmentName}-relay-instance-role"
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ec2.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+      Tags:
+        - Key: Name
+          Value: !Sub "${EnvironmentName}-relay-instance-role"
+
+  RelayInstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      InstanceProfileName: !Sub "${EnvironmentName}-relay-instance-profile"
+      Roles:
+        - !Ref RelayInstanceRole
+
+  # =========================================================================
+  # 5. EC2 Relay Box
+  #    When EnableMockServer is true, installs nginx as a mock service.
+  #    DependsOn ensures VPC endpoints are ready before the instance boots.
+  # =========================================================================
+  RelayInstance:
+    Type: AWS::EC2::Instance
+    DependsOn:
+      - S3GatewayEndpoint
+      - SsmEndpoint
+      - SsmMessagesEndpoint
+      - Ec2MessagesEndpoint
+    Properties:
+      InstanceType: !Ref InstanceType
+      ImageId: !Ref LatestAmiId
+      IamInstanceProfile: !Ref RelayInstanceProfile
+      SubnetId: !Ref PrivateSubnetA
+      SecurityGroupIds:
+        - !Ref RelaySecurityGroup
+      Tags:
+        - Key: Name
+          Value: !Sub "${EnvironmentName}-relay-box"
+        - Key: Purpose
+          Value: SSM relay for private network access
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          set -euxo pipefail
+
+          # If mock server is disabled, just ensure SSM agent is healthy and exit.
+          if [ "${EnableMockServer}" != "true" ]; then
+            echo "Mock server disabled — relay box is ready for SSM sessions."
+            exit 0
+          fi
+
+          # ---------------------------------------------------------------
+          # Install nginx as a mock private service for validation testing
+          # ---------------------------------------------------------------
+          dnf install -y nginx
+
+          mkdir -p /usr/share/nginx/html/api/system
+
+          echo 'OK' > /usr/share/nginx/html/api/system/ping
+
+          cat > /usr/share/nginx/html/api/system/version <<'EOF'
+          {"version":"1.0.0","service":"mock-private-endpoint","status":"healthy"}
+          EOF
+
+          cat > /usr/share/nginx/html/api/status <<'EOF'
+          {"connected":true,"source":"ssm-port-forwarding","network":"private-vpc","ingress":"none"}
+          EOF
+
+          cat > /usr/share/nginx/html/index.html <<'EOF'
+          <html><head><title>Private Service — SSM Port Forwarding</title></head>
+          <body><h1>Private Service Endpoint</h1>
+          <p>This service is running inside a VPC with no internet ingress.
+          You reached it through an AWS SSM port-forwarding session.</p>
+          <ul>
+          <li><a href="/api/system/ping">/api/system/ping</a></li>
+          <li><a href="/api/system/version">/api/system/version</a></li>
+          <li><a href="/api/status">/api/status</a></li>
+          </ul></body></html>
+          EOF
+
+          cat > /etc/nginx/conf.d/private-service.conf <<NGINXCONF
+          server {
+              listen ${TargetPort};
+              server_name _;
+              location / {
+                  root /usr/share/nginx/html;
+                  index index.html;
+                  default_type application/json;
+              }
+              location /api/system/ping {
+                  alias /usr/share/nginx/html/api/system/ping;
+                  default_type text/plain;
+              }
+              location /api/system/version {
+                  alias /usr/share/nginx/html/api/system/version;
+                  default_type application/json;
+              }
+              location /api/status {
+                  alias /usr/share/nginx/html/api/status;
+                  default_type application/json;
+              }
+          }
+          NGINXCONF
+
+          # Remove any default server config shipped by the nginx package,
+          # then write a minimal nginx.conf that only loads conf.d/*.conf
+          rm -f /etc/nginx/conf.d/default.conf
+
+          cat > /etc/nginx/nginx.conf <<'MAINCONF'
+          user nginx;
+          worker_processes auto;
+          error_log /var/log/nginx/error.log notice;
+          pid /run/nginx.pid;
+
+          include /usr/share/nginx/modules/*.conf;
+
+          events {
+              worker_connections 1024;
+          }
+
+          http {
+              log_format main '$remote_addr - $remote_user [$time_local] "$request" '
+                              '$status $body_bytes_sent "$http_referer" '
+                              '"$http_user_agent"';
+              access_log /var/log/nginx/access.log main;
+
+              sendfile on;
+              tcp_nopush on;
+              keepalive_timeout 65;
+              types_hash_max_size 4096;
+              include /etc/nginx/mime.types;
+              default_type application/octet-stream;
+
+              # Load custom server blocks from conf.d/
+              include /etc/nginx/conf.d/*.conf;
+          }
+          MAINCONF
+
+          nginx -t
+          systemctl enable nginx
+          systemctl start nginx
+
+          sleep 2
+          curl -sf http://localhost:${TargetPort}/api/system/ping || echo "WARNING: nginx not yet responding"
+
+  # =========================================================================
+  # 6. IAM User with FINE-GRAINED SSM permissions
+  #    This user can ONLY start SSM port-forwarding sessions to the relay
+  #    instance. Interactive shell sessions are denied.
+  # =========================================================================
+  SsmPortForwardUser:
+    Type: AWS::IAM::User
+    Properties:
+      UserName: !Sub "${EnvironmentName}-ssm-portforward-user"
+      Tags:
+        - Key: Name
+          Value: !Sub "${EnvironmentName}-ssm-portforward-user"
+        - Key: Purpose
+          Value: Fine-grained SSM port-forwarding only
+
+  SsmPortForwardPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: !Sub "${EnvironmentName}-ssm-portforward-policy"
+      Users:
+        - !Ref SsmPortForwardUser
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          # Allow starting SSM sessions on this specific instance only.
+          # The SessionDocumentAccessCheck condition ensures the document
+          # resource (below) is also evaluated, restricting to port-forwarding.
+          - Sid: AllowStartSessionOnInstance
+            Effect: Allow
+            Action:
+              - ssm:StartSession
+            Resource:
+              - !Sub "arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:instance/${RelayInstance}"
+            Condition:
+              BoolIfExists:
+                ssm:SessionDocumentAccessCheck: "true"
+
+          # Allow only the port-forwarding SSM document (no interactive shell)
+          - Sid: AllowPortForwardDocumentOnly
+            Effect: Allow
+            Action:
+              - ssm:StartSession
+            Resource:
+              - !Sub "arn:aws:ssm:${AWS::Region}::document/AWS-StartPortForwardingSession"
+
+          # Allow the user to terminate and resume their own sessions only
+          - Sid: AllowTerminateOwnSession
+            Effect: Allow
+            Action:
+              - ssm:TerminateSession
+              - ssm:ResumeSession
+            Resource:
+              - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:session/${!aws:username}-*"
+
+          # Read-only: describe instances, SSM status, and sessions
+          - Sid: AllowDescribeInstances
+            Effect: Allow
+            Action:
+              - ssm:DescribeInstanceInformation
+              - ssm:GetConnectionStatus
+              - ssm:DescribeSessions
+              - ec2:DescribeInstances
+            Resource: "*"
+
+  SsmPortForwardAccessKey:
+    Type: AWS::IAM::AccessKey
+    Properties:
+      UserName: !Ref SsmPortForwardUser
+
+# ---------------------------------------------------------------------------
+# Outputs
+# ---------------------------------------------------------------------------
+Outputs:
+  VpcId:
+    Description: VPC ID
+    Value: !Ref Vpc
+
+  RelayInstanceId:
+    Description: EC2 Instance ID of the relay box (use with SSM start-session)
+    Value: !Ref RelayInstance
+
+  RelayPrivateIp:
+    Description: Private IP of the relay box (not reachable from internet)
+    Value: !GetAtt RelayInstance.PrivateIp
+
+  TargetPort:
+    Description: Port the private service listens on inside the relay
+    Value: !Ref TargetPort
+
+  SsmPortForwardUserArn:
+    Description: ARN of the IAM user with fine-grained SSM permissions
+    Value: !GetAtt SsmPortForwardUser.Arn
+
+  SsmPortForwardAccessKeyId:
+    Description: Access Key ID for the SSM port-forward user
+    Value: !Ref SsmPortForwardAccessKey
+
+  SsmPortForwardSecretAccessKey:
+    Description: Secret Access Key for the SSM port-forward user (treat as sensitive)
+    Value: !GetAtt SsmPortForwardAccessKey.SecretAccessKey
+
+  SsmConnectCommand:
+    Description: Command to establish an SSM port-forwarding session
+    Value: !Sub >
+      aws ssm start-session
+      --target ${RelayInstance}
+      --document-name AWS-StartPortForwardingSession
+      --parameters '{"portNumber":["${TargetPort}"],"localPortNumber":["${TargetPort}"]}'
+      --region ${AWS::Region}
+
+  ConnectivityTestCommand:
+    Description: After establishing the tunnel, run this to verify connectivity
+    Value: !Sub "curl -s http://localhost:${TargetPort}/api/system/ping"
