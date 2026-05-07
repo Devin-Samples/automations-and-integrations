@@ -1,289 +1,275 @@
 # Devin Review
 
-Devin Review is a proactive code review capability that analyzes new pull requests for bugs, security issues, quality problems, and style inconsistencies. It runs automatically on PRs and posts findings as review comments — catching issues that traditional linters and CI checks miss.
+A full-service code review platform within the Devin webapp that turns large, complex PRs into intuitively organized diffs and precise explanations. As coding agents become more prevalent, the bottleneck shifts from writing code to reviewing it — Devin Review addresses this by making PRs faster to understand and act on.
 
-## Capabilities
+> **Official documentation:** [docs.devin.ai/work-with-devin/devin-review](https://docs.devin.ai/work-with-devin/devin-review.md)
+
+## Features
 
 | Feature | Description |
 |---------|-------------|
-| **Bug Detection** | Logic errors, null pointer risks, race conditions, off-by-one errors, edge cases |
-| **Security Analysis** | Hardcoded secrets, injection vulnerabilities, insecure defaults, auth bypass patterns |
-| **PR Summarization** | Readable overviews of large diffs highlighting key changes, risks, and architectural impact |
-| **Proactive Remediation** | Automatically opens fix PRs for discovered issues (optional) |
-| **Custom Rules** | Configure focus areas and sensitivity per repository |
-| **Style & Consistency** | Naming conventions, code organization, API design consistency |
+| **Logical Diff Grouping** | Groups related changes together instead of alphabetical file order |
+| **Code Move Detection** | Detects copied/moved code and displays changes cleanly instead of full deletes and inserts |
+| **Bug Catcher** | Analyzes PRs for bugs (severe and non-severe) and flags (investigate, informational) |
+| **Codebase-Aware Chat** | Ask questions about the PR and get answers with context from the rest of the codebase |
+| **Code Changes from Chat** | Ask the chat agent to make edits, review suggestions, and apply as commits without leaving Review |
+| **PR Workflow Actions** | Merge, close, convert to draft, mark ready for review, and toggle auto-merge directly from Review |
+| **Auto-Fix** | Automatically suggests and applies fixes for detected bugs |
+| **REVIEW.md Support** | Respects instruction files (REVIEW.md, AGENTS.md, CONTRIBUTING.md, .cursorrules, etc.) for project-specific review context |
 
 ---
 
-## Setup Walkthrough
+## Supported Git Providers
 
-### Step 1: Access Devin Review Settings
+| Capability | GitHub | GitLab |
+|------------|--------|--------|
+| View diffs and analysis | Yes | Coming soon |
+| Bug catcher | Yes | Coming soon |
+| Codebase-aware chat | Yes | Coming soon |
+| Code changes from chat | Yes | Coming soon |
+| Comments and reviews | Yes | Coming soon |
+| Merge / close / draft actions | Yes | Coming soon |
+| Auto-merge | Yes | Coming soon |
+| Auto-review | Yes | Coming soon |
 
-1. Log in to your Devin organization at [app.devin.ai](https://app.devin.ai)
-2. Click the **gear icon** in the left sidebar to open **Settings**
-3. Select **Devin Review** from the settings menu
+**GitHub** includes GitHub.com, GitHub Enterprise Server, and GitHub Enterprise Cloud — all have the same capabilities.
 
-You'll see the Devin Review configuration panel with a list of connected repositories and global settings.
-
-### Step 2: Connect Your Git Provider
-
-If not already connected, link your GitHub/GitLab/Azure DevOps organization:
-
-1. In **Settings > Git Connections**, click **Add Connection**
-2. Select your provider (GitHub, GitLab, or Azure DevOps)
-3. Authorize the Devin GitHub App (or equivalent) with access to the repositories you want reviewed
-4. Once connected, your repositories appear in the Devin Review configuration panel
-
-### Step 3: Enable Devin Review for Repositories
-
-You can enable Devin Review at two levels:
-
-**Organization-wide (recommended for rollout):**
-1. In **Settings > Devin Review**, toggle **Enable for all repositories**
-2. This applies Devin Review to every repository in the connected organization
-3. Individual repos can be excluded via the repo-level override (see below)
-
-**Per-repository:**
-1. In **Settings > Devin Review**, find the repository list
-2. Toggle the switch next to each repository you want reviewed
-3. Click the repository name to access per-repo configuration
-
-### Step 4: Configure Review Behavior
-
-For each enabled repository (or at the org level), configure:
-
-| Setting | Options | Recommended Default |
-|---------|---------|-------------------|
-| **Review mode** | `comment` (post findings as PR comments) or `review` (submit as a GitHub review) | `review` |
-| **Auto-remediation** | `off`, `suggest` (post fix as comment), `auto-pr` (open fix PR automatically) | `suggest` |
-| **Sensitivity** | `low`, `medium`, `high` | `medium` |
-| **Focus areas** | Bugs, Security, Style, Performance, Documentation (multi-select) | Bugs + Security |
-| **File filters** | Glob patterns to include/exclude (e.g., `!*.test.ts`, `!vendor/**`) | Exclude tests and generated code |
-| **PR size threshold** | Minimum diff size to trigger review (e.g., skip single-line typo fixes) | 5 lines |
-
-### Step 5: Verify the Integration
-
-1. Open a test PR in one of the enabled repositories
-2. Within a few minutes, Devin Review should post findings as review comments
-3. Check the PR's **Checks** tab — you should see a "Devin Review" status check
-4. If no findings are posted, verify the repository is enabled and the PR meets the size threshold
+**Write features** (comments, reviews, merge actions, code changes from chat) require a [GitHub App](https://docs.devin.ai/integrations/gh) connection installed on your GitHub organization. PAT-based connections are read-only.
 
 ---
 
-## Configuration Options
+## Getting Started
 
-### Per-Repository vs Organization-Wide
+There are multiple ways to access Devin Review:
 
-| Scope | Best For | How to Configure |
-|-------|----------|-----------------|
-| **Organization-wide** | Consistent review standards across all repos | Settings > Devin Review > Enable for all repositories |
-| **Per-repository** | Different sensitivity/rules for different projects | Settings > Devin Review > Click repo name > Override settings |
+| Method | How |
+|--------|-----|
+| **Devin webapp** | Go to [app.devin.ai/review](https://app.devin.ai/review) to see your open PRs organized by category (assigned, authored, review requested) |
+| **URL shortcut** | For any GitHub.com PR, replace `github.com` with `devinreview.com` in the URL |
+| **GitHub Enterprise** | Paste the full PR URL into the Review page at [app.devin.ai/review](https://app.devin.ai/review) |
+| **CLI** | Run `npx devin-review {pr-url}` from within a local clone (see [CLI](#cli) below) |
+| **From Devin sessions** | When Devin makes PRs, click the orange "Review" button in the chat |
 
-Per-repo settings **override** org-wide settings. This lets you set a baseline at the org level and customize for specific repos (e.g., higher sensitivity for security-critical services, lower for internal tools).
+---
 
-### Sensitivity Levels
+## Auto-Review
 
-| Level | Behavior | Use Case |
-|-------|----------|----------|
-| **Low** | Only flags high-confidence issues: confirmed bugs, definite security vulnerabilities, clear logic errors | Legacy codebases, high-churn repos where false positives cause friction |
-| **Medium** | Flags likely issues: probable bugs, security concerns, significant style deviations | Most production repositories (recommended default) |
-| **High** | Flags potential issues: possible edge cases, minor style inconsistencies, documentation gaps | Security-critical services, regulated codebases, greenfield projects |
+Devin can automatically review PRs without manual triggering. Configure auto-review in [Settings > Review](https://app.devin.ai/settings/review).
 
-### Auto-Remediation Toggle
+### When Does Auto-Review Run?
 
-Auto-remediation controls whether Devin Review goes beyond identifying issues to actually fixing them:
+Auto-review triggers when:
+- A PR is opened (non-draft)
+- New commits are pushed to a PR
+- A draft PR is marked as ready for review
+- An enrolled user is added as a reviewer or assignee
+
+Draft PRs are skipped until marked ready.
+
+### Trigger Modes
 
 | Mode | Behavior |
 |------|----------|
-| **Off** | Devin Review only posts findings as comments. No fix suggestions. |
-| **Suggest** | Devin Review posts a suggested code fix inline with the finding comment. The developer applies it manually. |
-| **Auto-PR** | Devin Review opens a separate fix PR targeting the original PR's branch. The developer reviews and merges the fix. |
+| **Auto review** (default) | Reviews trigger on all events: PR opened, new commits, draft marked ready, reviewer/assignee added |
+| **On PR creation** | Reviews only trigger when a PR is first opened or a draft is marked ready; subsequent pushes do not trigger |
 
-**Recommendation:** Start with `suggest` mode. This lets the team see fix quality before trusting auto-PRs. Escalate to `auto-pr` for high-confidence finding types (e.g., unused imports, missing null checks) once the team is comfortable.
+### Self-Enrollment (All Users)
 
----
+Any user with a connected GitHub account can enroll themselves — no admin permissions needed:
 
-## Example Findings
+1. Go to [Settings > Review](https://app.devin.ai/settings/review)
+2. Click "Add myself (@yourusername)" to enroll
 
-### Bug Detection
+Once enrolled, Devin automatically reviews any PR you create, are added to as a reviewer, or are assigned to.
 
-```
-📋 Devin Review — Bug: Potential null pointer dereference
+### Admin Configuration
 
-In `src/services/user.ts`, line 42:
+Admins have additional options in [Settings > Review](https://app.devin.ai/settings/review):
 
-    const email = user.profile.email.toLowerCase();
+| Setting | Description |
+|---------|-------------|
+| **Repositories** | Add repositories to auto-review ALL PRs on that repo |
+| **Users** | View and manage all enrolled users across the organization |
+| **Insert link in PR description** | When enabled (default), Devin adds a review link in the PR description |
 
-`user.profile` may be null if the user hasn't completed onboarding.
-This will throw a TypeError at runtime.
+### Posting to GitHub
 
-Suggested fix:
-    const email = user.profile?.email?.toLowerCase() ?? '';
-```
+Admins can configure what Devin Review posts back to GitHub under **Post to GitHub**:
 
-### Security Issue
-
-```
-📋 Devin Review — Security: SQL injection vulnerability
-
-In `src/api/routes/search.ts`, line 87:
-
-    const query = `SELECT * FROM products WHERE name LIKE '%${req.query.term}%'`;
-
-User input is interpolated directly into an SQL query string. This is
-vulnerable to SQL injection.
-
-Suggested fix: Use parameterized queries:
-    const query = `SELECT * FROM products WHERE name LIKE $1`;
-    const params = [`%${req.query.term}%`];
-    const result = await db.query(query, params);
-```
-
-### Style Inconsistency
-
-```
-📋 Devin Review — Style: Inconsistent error handling pattern
-
-In `src/services/payment.ts`, lines 23-31:
-
-This function uses try/catch with console.error, but all other service
-functions in this codebase use the centralized `logger.error()` utility
-and re-throw wrapped errors via `AppError`.
-
-Suggested fix: Align with the project's error handling convention:
-    } catch (error) {
-      logger.error('Payment processing failed', { error, paymentId });
-      throw new AppError('PAYMENT_FAILED', 'Payment processing failed', error);
-    }
-```
-
-### Performance
-
-```
-📋 Devin Review — Performance: N+1 query detected
-
-In `src/api/routes/orders.ts`, lines 15-22:
-
-    const orders = await Order.findAll();
-    for (const order of orders) {
-      order.items = await OrderItem.findAll({ where: { orderId: order.id } });
-    }
-
-This executes N+1 database queries (1 for orders + 1 per order for items).
-For 100 orders, this means 101 queries.
-
-Suggested fix: Use eager loading:
-    const orders = await Order.findAll({
-      include: [{ model: OrderItem, as: 'items' }]
-    });
-```
+| Setting | Default | Description |
+|---------|---------|-------------|
+| **Post GitHub PR checks** | On | Creates a commit status check on the PR for each review |
+| **Bugs** | On | Posts bugs (likely errors or incorrect behavior) as PR comments |
+| **Flags (investigate)** | Off | Posts investigate flags (potential issues worth a closer look) as PR comments |
+| **Flags (note)** | Off | Posts informational flags (observations that may not require action) as PR comments |
 
 ---
 
-## Integration with Required Status Checks
+## Bug Catcher
 
-Devin Review can be configured as a **required status check** for merge protection — meaning PRs cannot be merged until Devin Review has run and (optionally) until all findings are addressed.
+The Bug Catcher analyzes PRs for potential issues and displays findings in the Analysis sidebar.
 
-### Setting Up as a Required Check
+### Bugs
 
-1. **In GitHub:**
-   - Go to **Settings > Branches > Branch protection rules**
-   - Edit (or create) the rule for your default branch (e.g., `main`)
-   - Under **Require status checks to pass before merging**, search for `Devin Review`
-   - Check the box to require it
-   - Click **Save changes**
+Actionable errors that should be fixed. Displayed with two severity levels:
 
-2. **In GitLab:**
-   - Go to **Settings > Merge Requests > Merge checks**
-   - Enable **Pipelines must succeed**
-   - Devin Review posts its status as a pipeline external check
+| Severity | Description |
+|----------|-------------|
+| **Severe** | High-confidence issues that require immediate attention |
+| **Non-severe** | Lower severity issues that should still be reviewed |
 
-3. **In Azure DevOps:**
-   - Go to **Repos > Branches > Branch policies** for your target branch
-   - Under **Status checks**, add `Devin Review` as a required check
+### Flags
 
-### Merge Blocking Behavior
+Informational code annotations that may or may not require action:
 
-| Configuration | Merge Behavior |
-|--------------|----------------|
-| Devin Review as **optional** check | Review runs and posts findings, but PR can merge regardless |
-| Devin Review as **required** check | PR cannot merge until Devin Review completes |
-| Required + **no unresolved findings** | PR cannot merge until all Devin Review findings are resolved or dismissed |
+| Class | Description |
+|-------|-------------|
+| **Investigate** | Warrants further investigation — verify whether there is an actual issue |
+| **Informational** | The Bug Catcher has concluded correctness or is explaining how something works |
 
-**Recommendation:** Start with Devin Review as an **optional** check. Once the team trusts the signal quality (low false positive rate), promote it to **required**.
+Findings can be marked as resolved once addressed or determined unnecessary. Resolved items are dimmed and sorted to the bottom.
 
 ---
 
-## Best Practices for Rolling Out Devin Review
+## Auto-Fix
 
-### Phase 1: Observation Mode (Weeks 1–2)
+Devin Review can automatically suggest and apply fixes for detected bugs.
 
-**Goal:** Build team trust and calibrate settings.
+### Enabling Auto-Fix
 
-- Enable Devin Review with **medium sensitivity** and **auto-remediation off**
-- Set it as an **optional** (non-blocking) status check
-- Let it run on all PRs for 1–2 weeks
-- Track metrics:
-  - How many findings per PR?
-  - What percentage are true positives vs false positives?
-  - Which finding categories are most valuable?
-- Share a summary with the team: *"Devin Review found X bugs and Y security issues this week that made it to production. Here are some examples."*
+| Method | How |
+|--------|-----|
+| **PR review settings** | On any Review page, click the settings icon and toggle **Enable Autofix** |
+| **Embedded review** | In the embedded Review view inside a Devin session, toggle **Enable Autofix** |
+| **Global settings** | [Settings > Customization](https://app.devin.ai/customization) > Pull request settings > Autofix settings |
 
-### Phase 2: Calibration (Weeks 3–4)
-
-**Goal:** Reduce noise and increase signal.
-
-- Review false positives from Phase 1 and adjust:
-  - Lower sensitivity for noisy categories
-  - Add file exclusion filters for generated code, vendored deps, test files (if desired)
-  - Disable finding types that consistently produce low-value results
-- Enable **suggest** auto-remediation for high-confidence finding types
-- Continue as optional check
-
-### Phase 3: Promotion (Month 2+)
-
-**Goal:** Make Devin Review a standard part of the review process.
-
-- Promote Devin Review to a **required** status check
-- Enable **auto-pr** remediation for well-understood finding types (e.g., security fixes, unused imports)
-- Establish a team norm: "Address or dismiss all Devin Review findings before requesting human review"
-- Monitor merge velocity — if Devin Review is blocking too many PRs, revisit sensitivity settings
-
-### Phase 4: Expansion (Ongoing)
-
-**Goal:** Extend coverage and customize.
-
-- Roll out to additional repositories
-- Create repo-specific rules for different project types (e.g., stricter security for backend APIs, stricter style for shared libraries)
-- Integrate with team retrospectives: use Devin Review findings data to identify recurring quality issues and invest in systemic fixes
-- Set up Slack/Teams notifications for critical findings (severity: high, category: security)
+When enabled, Devin generates suggested fixes alongside bug findings that you can review and apply as commits directly from the diff view.
 
 ---
 
-## Frequently Asked Questions
+## Permissions
 
-**Q: Does Devin Review work with monorepos?**
-A: Yes. Use file filters to scope reviews to specific packages or directories. Devin Review analyzes the diff, so it only reviews changed files regardless of repo structure.
+Devin Review uses two permissions, found under **Devin Review permissions** in the role editor:
 
-**Q: How long does a review take?**
-A: Most reviews complete in 1–3 minutes for typical PRs (under 500 lines changed). Very large PRs (1000+ lines) may take longer.
+| Permission | Description | Default |
+|-----------|-------------|---------|
+| **Use Devin Review** | Required to access Devin Review and configure personal settings (e.g., self-enrollment) | All members and admins |
+| **Manage Devin Review** | Required to manage auto-review settings, posting options, and admin configuration | Admins only |
 
-**Q: Can I configure different rules for different directories?**
-A: Use file filters at the repo level. For more granular control, create a `.devin-review.yml` configuration file in the repo root to define per-path rules.
+---
 
-**Q: Does Devin Review consume ACUs?**
-A: Devin Review is included with your Devin subscription and runs separately from session-based ACU usage. Check your plan details for specific limits.
+## Instruction Files
 
-**Q: Can I disable Devin Review for specific PRs?**
-A: Add the label `skip-devin-review` to a PR to bypass Devin Review for that PR. This is useful for automated PRs (e.g., dependency bumps from Dependabot) or trivial changes.
+Devin Review respects instruction files in your repository. If any of these files exist, they are used as context when analyzing PRs:
 
-**Q: How do I dismiss a finding?**
-A: Reply to the Devin Review comment with a reason for dismissal. Devin Review tracks dismissals and learns from them to reduce similar false positives in the future.
+- `**/REVIEW.md` — Dedicated review instruction file
+- `**/AGENTS.md`
+- `**/CLAUDE.md` (case-insensitive)
+- `**/CONTRIBUTING.md` (case-insensitive)
+- `.cursorrules`
+- `.windsurfrules`
+- `.cursor/rules`
+- `*.rules`
+- `*.mdc`
+- `.coderabbit.yaml` / `.coderabbit.yml`
+- `greptile.json`
+
+Files inside agent-like subdirectories (`.agents/`, `.devin/`, `.cursor/`, `.github/`) are scoped to the parent directory.
+
+### Custom Review Rules
+
+Configure additional files as review context from [Settings > Review](https://app.devin.ai/settings/review) under **Review Rules**. Add custom file glob patterns (e.g., `docs/**/*.md`) beyond the defaults.
+
+### Example REVIEW.md
+
+```markdown
+# Review Guidelines
+
+## Critical Areas
+- All changes to `src/auth/` must be reviewed for security implications.
+- Database migration files should be checked for backward compatibility.
+
+## Conventions
+- API endpoints must include input validation and proper error handling.
+- All public functions require TypeScript return types — do not use `any`.
+
+## Ignore
+- Auto-generated files in `src/generated/` do not need review.
+- Lock files can be skipped unless dependencies changed.
+
+## Performance
+- Flag any database queries inside loops.
+- Watch for N+1 query patterns in API resolvers.
+```
+
+---
+
+## CLI
+
+Run code reviews from your terminal — useful for private repositories or local workflows.
+
+### Usage
+
+```bash
+cd path/to/repo
+npx devin-review https://github.com/owner/repo/pull/123
+```
+
+Must be run from within the repository being reviewed.
+
+### How It Works
+
+1. **Git-based diff extraction** — Uses your local git access to fetch the PR branch and compute the diff
+2. **Isolated worktree checkout** — Creates a git worktree in a cached directory (your working directory stays untouched)
+3. **Diff sent to Devin servers** — The computed diff and file contents are sent for analysis
+4. **Local code execution** — The Bug Catcher can execute read-only operations (file reading, search, grep) scoped to the worktree for deeper analysis
+
+### Privacy
+
+- **Local-only access by default** — A localhost server serves a secure token; only processes on your machine can access the review page
+- **Transfer to your Devin account** — Log in to a Devin account with access to the GitHub organization to share and access from other devices
+
+---
+
+## Commit & Comment Attribution
+
+| Action | Attributed To |
+|--------|--------------|
+| Bug findings, flags, automated annotations | Devin bot |
+| User comments and reviews through Devin Review | User's GitHub identity |
+| Code changes from chat | Devin bot |
+| GitHub Suggested Changes applied by user | User (standard GitHub behavior) |
+
+Devin will never create commits or comments on behalf of a user without the user explicitly initiating the action.
+
+---
+
+## Best Practices for Rolling Out
+
+### Phase 1: Observation (Weeks 1–2)
+
+- Enable auto-review with default settings (bugs posted to GitHub, flags off)
+- Let it run on a few pilot repositories
+- Track true positive rate and team feedback
+- Share examples: *"Devin Review caught X bugs this week before they reached production"*
+
+### Phase 2: Expand (Weeks 3–4)
+
+- Enroll more users via self-enrollment
+- Add more repositories to auto-review
+- Enable **investigate** flag posting if the team wants more signal
+- Create `REVIEW.md` files in key repos to customize review focus
+
+### Phase 3: Integrate (Month 2+)
+
+- Add Devin Review as a GitHub required status check for critical repositories
+- Enable Auto-Fix for Devin-authored PRs
+- Establish team norm: review Devin Review findings before requesting human review
 
 ---
 
 ## Reference
 
-- [Devin Review documentation](https://docs.devin.ai)
-- [Configuring review rules](https://docs.devin.ai)
+- [Official Devin Review documentation](https://docs.devin.ai/work-with-devin/devin-review.md)
+- [GitHub App integration guide](https://docs.devin.ai/integrations/gh)
 - [Devin API reference](https://docs.devin.ai/api-reference/overview)
