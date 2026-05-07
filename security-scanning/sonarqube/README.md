@@ -63,6 +63,7 @@ jobs:
       - name: Check Quality Gate
         id: quality_gate
         uses: SonarSource/sonarqube-quality-gate-action@v1
+        continue-on-error: true
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}

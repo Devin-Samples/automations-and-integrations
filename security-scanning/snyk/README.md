@@ -76,7 +76,7 @@ jobs:
           snyk test \
             --json \
             --severity-threshold=${{ env.SEVERITY_THRESHOLD }} \
-            > /tmp/snyk_sca_results.json 2>&1 || true
+            > /tmp/snyk_sca_results.json || true
 
       - name: Run Snyk Code test (SAST)
         id: snyk_sast
@@ -85,7 +85,7 @@ jobs:
           snyk code test \
             --json \
             --severity-threshold=${{ env.SEVERITY_THRESHOLD }} \
-            > /tmp/snyk_sast_results.json 2>&1 || true
+            > /tmp/snyk_sast_results.json || true
 
       - name: Process findings and trigger Devin
         if: github.event_name == 'pull_request'
@@ -496,7 +496,7 @@ jobs:
           snyk auth ${{ secrets.SNYK_TOKEN }}
 
       - name: Run Snyk monitor
-        run: snyk monitor --json > /tmp/snyk_monitor.json || true
+        run: snyk test --json > /tmp/snyk_monitor.json || true
 
       - name: Check for new critical vulnerabilities
         env:
