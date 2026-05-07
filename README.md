@@ -56,6 +56,19 @@ automations-and-integrations/
 │   ├── pagerduty/                     #   PagerDuty webhook integration (planned)
 │   └── opsgenie/                      #   Opsgenie webhook integration (planned)
 │
+├── security-scanning/                 # SAST/SCA → Devin remediation
+│   ├── sonarqube/                     #   SonarQube/SonarCloud webhook (available)
+│   ├── snyk/                          #   Snyk webhook integration (available)
+│   ├── checkmarx/                     #   Checkmarx webhook integration (planned)
+│   └── trivy/                         #   Trivy CI pipeline integration (available)
+│
+├── scheduled-maintenance/             # Proactive O&M via scheduled sessions
+│   ├── dependency-updates/            #   Automated version bumps (available)
+│   ├── code-hygiene/                  #   Dead code, import cleanup (available)
+│   └── license-compliance/            #   License audit automation (available)
+│
+├── devin-review/                      # Devin Review configuration & patterns
+│
 ├── docs/
 │   ├── setup-guide/                   #   Step-by-step configuration guides
 │   └── architecture/                  #   Reference architecture diagrams
@@ -75,6 +88,9 @@ automations-and-integrations/
 | **Messaging** | [`messaging/`](messaging/) | Slash commands and bots for Slack, Microsoft Teams | Planned |
 | **Observability** | [`observability/`](observability/) | Alert-driven Devin sessions from Datadog, New Relic | Planned |
 | **Incident Response** | [`incident-response/`](incident-response/) | Auto-triage incidents from PagerDuty, Opsgenie | Planned |
+| **Security Scanning** | [`security-scanning/`](security-scanning/) | SAST/SCA finding → Devin remediation pipeline | SonarQube, Snyk & Trivy available; others planned |
+| **Scheduled Maintenance** | [`scheduled-maintenance/`](scheduled-maintenance/) | Proactive O&M via Devin scheduled sessions | Available |
+| **Devin Review** | [`devin-review/`](devin-review/) | Devin Review setup, configuration, and best practices | Available |
 
 ## Getting Started
 
