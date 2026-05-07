@@ -522,6 +522,9 @@ jobs:
       - name: Merge results and trigger Devin
         env:
           DEVIN_API_KEY: ${{ secrets.DEVIN_API_KEY }}
+          GH_REPO: ${{ github.repository }}
+          GH_BRANCH: ${{ github.head_ref }}
+          GH_PR_NUMBER: ${{ github.event.pull_request.number }}
         run: |
           python3 << 'EOF'
           import json
@@ -539,8 +542,14 @@ jobs:
               for result in data.get("Results", []):
                   for vuln in result.get("Vulnerabilities", []) or []:
                       if vuln.get("Severity", "").upper() in threshold_set:
-                          findings.append(f"- [{vuln['Severity']}] {vuln.get('PkgName')}@{vuln.get('InstalledVersion')} in {result['Target']} — fix: {vuln.get('FixedVersion', 'none')}")
+                          findings.append("- [{}] {}@{} in {} — fix: {}".format(
+                              vuln["Severity"], vuln.get("PkgName"), vuln.get("InstalledVersion"),
+                              result["Target"], vuln.get("FixedVersion", "none")))
               return findings
+
+          repo = os.environ.get("GH_REPO", "")
+          branch = os.environ.get("GH_BRANCH", "")
+          pr_number = os.environ.get("GH_PR_NUMBER", "")
 
           threshold = set(os.environ.get("SEVERITY_THRESHOLD", "HIGH,CRITICAL").split(","))
           fs_findings = load_findings("trivy-fs.json", threshold)
@@ -551,29 +560,33 @@ jobs:
               print("No findings. Skipping.")
               sys.exit(0)
 
-          prompt = f"""## Trivy Security Scan Findings
+          prompt = """## Trivy Security Scan Findings
 
-          Repository: ${{ github.repository }}
-          Branch: ${{ github.head_ref }}
-          PR: #${{ github.event.pull_request.number }}
+          Repository: {repo}
+          Branch: {branch}
+          PR: #{pr_number}
 
-          ### Filesystem Findings ({len(fs_findings)})
-          {chr(10).join(fs_findings) or "None"}
+          ### Filesystem Findings ({fs_count})
+          {fs_list}
 
-          ### Image Findings ({len(img_findings)})
-          {chr(10).join(img_findings) or "None"}
+          ### Image Findings ({img_count})
+          {img_list}
 
-          Fix all findings with available patches. Push to branch ${{ github.head_ref }}.
-          """
+          Fix all findings with available patches. Push to branch {branch}.
+          """.format(
+              repo=repo, branch=branch, pr_number=pr_number,
+              fs_count=len(fs_findings), fs_list=chr(10).join(fs_findings) or "None",
+              img_count=len(img_findings), img_list=chr(10).join(img_findings) or "None",
+          )
 
           payload = json.dumps({"prompt": prompt, "idleTTL": 60}).encode()
           req = Request("https://api.devin.ai/v1/sessions", data=payload, headers={
-              "Authorization": f"Bearer {os.environ['DEVIN_API_KEY']}",
+              "Authorization": "Bearer " + os.environ["DEVIN_API_KEY"],
               "Content-Type": "application/json",
           }, method="POST")
           with urlopen(req) as resp:
               result = json.loads(resp.read())
-          print(f"Session: {result.get('url')}")
+          print("Session: " + result.get("url", "N/A"))
           EOF
 ```
 
