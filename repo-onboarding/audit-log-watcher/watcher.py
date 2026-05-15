@@ -232,11 +232,46 @@ def should_ignore(repo_url: str, patterns: list[str]) -> bool:
 # Main poll loop
 # ---------------------------------------------------------------------------
 
+def _process_repos_immediate(
+    cfg: Config,
+    repos: list[dict[str, str]],
+    seen_urls: set[str],
+    state: dict[str, Any],
+) -> None:
+    """Create one session per repo; queue failures for retry."""
+    failed: list[dict[str, str]] = []
+    for repo in repos:
+        try:
+            result = create_setup_session(cfg, repo["url"], repo["name"])
+            session_url = result.get("url", result.get("session_id", "unknown"))
+            logger.info("Session created for %s: %s", repo["name"], session_url)
+            seen_urls.add(repo["url"])
+        except requests.HTTPError as exc:
+            logger.error("Failed to create session for %s: %s", repo["url"], exc)
+            failed.append(repo)
+
+    pending_retry = state.get("pending_retry", [])
+    retry_urls = {r["url"] for r in pending_retry}
+    for repo in failed:
+        if repo["url"] not in retry_urls:
+            pending_retry.append(repo)
+    state["pending_retry"] = pending_retry
+
+
 def poll_once(cfg: Config, state: dict[str, Any]) -> dict[str, Any]:
     """Run one poll cycle. Returns the updated state dict."""
     last_ts = state.get("last_processed_timestamp")
     if last_ts is None:
         last_ts = int(time.time()) - cfg.lookback
+
+    # Retry repos that failed session creation on previous cycles.
+    pending_retry = state.get("pending_retry", [])
+    if pending_retry and cfg.processing_mode == "immediate":
+        logger.info("Retrying %d repo(s) from previous failures", len(pending_retry))
+        seen_urls_for_retry: set[str] = set(state.get("seen_repo_urls", []))
+        state["pending_retry"] = []
+        _process_repos_immediate(cfg, pending_retry, seen_urls_for_retry, state)
+        state["seen_repo_urls"] = sorted(seen_urls_for_retry)
 
     logger.info("Polling audit logs since %s", last_ts)
 
@@ -284,14 +319,7 @@ def poll_once(cfg: Config, state: dict[str, Any]) -> dict[str, Any]:
         state["pending_batch"] = pending
         seen_urls.update(this_cycle)
     else:
-        for repo in new_repos:
-            try:
-                result = create_setup_session(cfg, repo["url"], repo["name"])
-                session_url = result.get("url", result.get("session_id", "unknown"))
-                logger.info("Session created for %s: %s", repo["name"], session_url)
-                seen_urls.add(repo["url"])
-            except requests.HTTPError as exc:
-                logger.error("Failed to create session for %s: %s", repo["url"], exc)
+        _process_repos_immediate(cfg, new_repos, seen_urls, state)
 
     state["last_processed_timestamp"] = latest_ts
     state["seen_repo_urls"] = sorted(seen_urls)
