@@ -267,10 +267,12 @@ def poll_once(cfg: Config, state: dict[str, Any]) -> dict[str, Any]:
     # Retry repos that failed session creation on previous cycles.
     pending_retry = state.get("pending_retry", [])
     if pending_retry and cfg.processing_mode == "immediate":
-        logger.info("Retrying %d repo(s) from previous failures", len(pending_retry))
         seen_urls_for_retry: set[str] = set(state.get("seen_repo_urls", []))
+        pending_retry = [r for r in pending_retry if r["url"] not in seen_urls_for_retry]
         state["pending_retry"] = []
-        _process_repos_immediate(cfg, pending_retry, seen_urls_for_retry, state)
+        if pending_retry:
+            logger.info("Retrying %d repo(s) from previous failures", len(pending_retry))
+            _process_repos_immediate(cfg, pending_retry, seen_urls_for_retry, state)
         state["seen_repo_urls"] = sorted(seen_urls_for_retry)
 
     logger.info("Polling audit logs since %s", last_ts)
@@ -309,6 +311,9 @@ def poll_once(cfg: Config, state: dict[str, Any]) -> dict[str, Any]:
         if not page.get("has_next_page"):
             break
         cursor = page.get("end_cursor")
+        if not cursor:
+            logger.warning("has_next_page is true but no end_cursor; stopping pagination")
+            break
 
     if not new_repos:
         logger.info("No new repos found")
