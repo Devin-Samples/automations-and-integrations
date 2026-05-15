@@ -56,6 +56,9 @@ automations-and-integrations/
 │   ├── pagerduty/                     #   PagerDuty webhook integration (planned)
 │   └── opsgenie/                      #   Opsgenie webhook integration (planned)
 │
+├── repo-onboarding/                   # Automated repo environment setup
+│   └── audit-log-watcher/             #   Poll audit logs for new repo permissions (available)
+│
 ├── docs/
 │   ├── setup-guide/                   #   Step-by-step configuration guides
 │   └── architecture/                  #   Reference architecture diagrams
@@ -75,6 +78,7 @@ automations-and-integrations/
 | **Messaging** | [`messaging/`](messaging/) | Slash commands and bots for Slack, Microsoft Teams | Planned |
 | **Observability** | [`observability/`](observability/) | Alert-driven Devin sessions from Datadog, New Relic | Planned |
 | **Incident Response** | [`incident-response/`](incident-response/) | Auto-triage incidents from PagerDuty, Opsgenie | Planned |
+| **Repo Onboarding** | [`repo-onboarding/`](repo-onboarding/) | Auto-detect new repo permissions and trigger environment setup sessions | Audit-log watcher available |
 
 ## Getting Started
 
