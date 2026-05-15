@@ -373,6 +373,8 @@ def run(cfg: Config, *, once: bool = False) -> None:
                 break
         except requests.RequestException as exc:
             logger.error("API error during poll cycle: %s", exc)
+            if once:
+                break
 
         logger.debug("Sleeping %ds", cfg.poll_interval)
         time.sleep(cfg.poll_interval)
