@@ -242,6 +242,7 @@ def poll_once(cfg: Config, state: dict[str, Any]) -> dict[str, Any]:
 
     new_repos: list[dict[str, str]] = []
     seen_urls: set[str] = set(state.get("seen_repo_urls", []))
+    this_cycle: set[str] = set()
     latest_ts = last_ts
     cursor: str | None = None
 
@@ -259,14 +260,14 @@ def poll_once(cfg: Config, state: dict[str, Any]) -> dict[str, Any]:
             repos = extract_repos_from_event(event)
             for repo in repos:
                 url = repo["url"]
-                if url in seen_urls:
+                if url in seen_urls or url in this_cycle:
                     logger.debug("Skipping already-seen repo: %s", url)
                     continue
                 if should_ignore(url, cfg.ignore_patterns):
                     logger.info("Ignoring repo (matched ignore pattern): %s", url)
                     seen_urls.add(url)
                     continue
-                seen_urls.add(url)
+                this_cycle.add(url)
                 new_repos.append(repo)
                 logger.info("New repo permission detected: %s", url)
 
@@ -281,12 +282,14 @@ def poll_once(cfg: Config, state: dict[str, Any]) -> dict[str, Any]:
         pending = state.get("pending_batch", [])
         pending.extend(new_repos)
         state["pending_batch"] = pending
+        seen_urls.update(this_cycle)
     else:
         for repo in new_repos:
             try:
                 result = create_setup_session(cfg, repo["url"], repo["name"])
                 session_url = result.get("url", result.get("session_id", "unknown"))
                 logger.info("Session created for %s: %s", repo["name"], session_url)
+                seen_urls.add(repo["url"])
             except requests.HTTPError as exc:
                 logger.error("Failed to create session for %s: %s", repo["url"], exc)
 
