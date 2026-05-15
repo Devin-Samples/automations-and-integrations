@@ -246,7 +246,7 @@ def _process_repos_immediate(
             session_url = result.get("url", result.get("session_id", "unknown"))
             logger.info("Session created for %s: %s", repo["name"], session_url)
             seen_urls.add(repo["url"])
-        except requests.HTTPError as exc:
+        except requests.RequestException as exc:
             logger.error("Failed to create session for %s: %s", repo["url"], exc)
             failed.append(repo)
 
@@ -337,7 +337,7 @@ def flush_batch(cfg: Config, state: dict[str, Any]) -> dict[str, Any]:
         result = create_batch_session(cfg, pending)
         session_url = result.get("url", result.get("session_id", "unknown"))
         logger.info("Batch session created: %s", session_url)
-    except requests.HTTPError as exc:
+    except requests.RequestException as exc:
         logger.error("Failed to create batch session: %s", exc)
         return state
 
@@ -353,23 +353,21 @@ def run(cfg: Config, *, once: bool = False) -> None:
         try:
             state = poll_once(cfg, state)
             save_state(cfg.state_file, state)
-        except requests.HTTPError as exc:
-            logger.error("API error during poll: %s", exc)
-        except requests.ConnectionError as exc:
-            logger.error("Connection error: %s", exc)
 
-        if cfg.processing_mode == "batch":
-            elapsed = time.monotonic() - batch_timer
-            if elapsed >= cfg.batch_window:
-                state = flush_batch(cfg, state)
-                save_state(cfg.state_file, state)
-                batch_timer = time.monotonic()
-
-        if once:
             if cfg.processing_mode == "batch":
-                state = flush_batch(cfg, state)
-                save_state(cfg.state_file, state)
-            break
+                elapsed = time.monotonic() - batch_timer
+                if elapsed >= cfg.batch_window:
+                    state = flush_batch(cfg, state)
+                    save_state(cfg.state_file, state)
+                    batch_timer = time.monotonic()
+
+            if once:
+                if cfg.processing_mode == "batch":
+                    state = flush_batch(cfg, state)
+                    save_state(cfg.state_file, state)
+                break
+        except requests.RequestException as exc:
+            logger.error("API error during poll cycle: %s", exc)
 
         logger.debug("Sleeping %ds", cfg.poll_interval)
         time.sleep(cfg.poll_interval)
