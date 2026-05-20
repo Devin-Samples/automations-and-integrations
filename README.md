@@ -28,6 +28,7 @@ automations-and-integrations/
 │   └── bitbucket/                     #   Bitbucket Pipelines (planned)
 │
 ├── network-connectivity/              # Private network access patterns
+│   ├── database-access/               #   MCP + CLI database connectivity (available)
 │   ├── aws/                           #   AWS connectivity patterns
 │   │   ├── ssm-port-forwarding/       #     SSM tunnel to private VPC resources (available)
 │   │   ├── client-vpn/                #     Full subnet VPN access (planned)
@@ -73,7 +74,7 @@ automations-and-integrations/
 | Category | Directory | Description | Status |
 |---|---|---|---|
 | **CI/CD** | [`ci-cd/`](ci-cd/) | Trigger Devin from pull requests, issue comments, schedules, and pipeline events | GitHub Actions & Azure DevOps available; others planned |
-| **Network Connectivity** | [`network-connectivity/`](network-connectivity/) | Connect Devin to private resources in AWS, Azure, and GCP VPCs | AWS SSM port-forwarding available; others planned |
+| **Network Connectivity** | [`network-connectivity/`](network-connectivity/) | Connect Devin to private resources in AWS, Azure, and GCP VPCs — including [database access patterns](network-connectivity/database-access/) | AWS SSM port-forwarding & database access available; others planned |
 | **Issue Tracking** | [`issue-tracking/`](issue-tracking/) | Trigger Devin from issue transitions in Jira, Linear, ServiceNow | Planned |
 | **Messaging** | [`messaging/`](messaging/) | Slash commands and bots for Slack, Microsoft Teams | Planned |
 | **Observability** | [`observability/`](observability/) | Alert-driven Devin sessions from Datadog, New Relic | Planned |

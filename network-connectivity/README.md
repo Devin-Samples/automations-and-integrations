@@ -14,6 +14,7 @@ Patterns and deployable infrastructure for connecting Devin to private resources
 | **VPN Gateway** | Azure | Medium | ~$0.04/hr+ | Full site-to-site or point-to-site connectivity |
 | **[IAP Tunneling](gcp/iap-tunneling/)** | GCP | Low | Free (IAP) | Quick access to GCP VMs; identity-aware TCP forwarding |
 | **Private Service Connect** | GCP | Low | ~$0.01/hr + data | Google-managed services over private IP |
+| **[Database Access](database-access/)** | Any | Varies | Depends on tunnel | MCP or CLI database connectivity — credential setup, rotation, auth providers |
 
 ### Decision Guide
 
@@ -49,6 +50,7 @@ Patterns and deployable infrastructure for connecting Devin to private resources
 ```
 network-connectivity/
 ├── README.md                          # This file — decision guide
+├── database-access/                   # ✓ Available — MCP + CLI database connectivity patterns
 ├── aws/
 │   ├── ssm-port-forwarding/           # ✓ Available — SSM tunnel to private VPC resources
 │   ├── client-vpn/                    # Planned
@@ -71,6 +73,14 @@ Each pattern includes instructions for integrating with Devin's environment conf
 3. **`maintenance`** — Establish the tunnel or VPN connection at session start
 
 See individual pattern READMEs for specific instructions.
+
+## Database Access
+
+For connecting Devin to databases specifically (MCP server setup, CLI configuration, credential management, and private database networking), see the dedicated [Database Access](database-access/) guide. It covers:
+- MCP vs. CLI access models and when to use each
+- Credential creation, rotation, and auth provider configuration
+- Per-database setup examples (PostgreSQL, MySQL, MongoDB, Snowflake, etc.)
+- Integration with the networking patterns above (SSM tunnels, VPN, PrivateLink) for private databases
 
 ## Reference
 
