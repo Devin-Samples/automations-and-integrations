@@ -6,15 +6,21 @@ Patterns for connecting Devin to private resources in Azure VNets.
 
 | Pattern | Directory | Description | Status |
 |---|---|---|---|
-| **Bastion Tunneling** | `bastion-tunneling/` | Native SSH/RDP tunneling through Azure Bastion — no public IPs on VMs | Planned |
-| **Private Endpoints** | `private-endpoints/` | Private IP connectivity to Azure PaaS services (Key Vault, Storage, SQL) | Planned |
-| **VPN Gateway** | `vpn-gateway/` | Point-to-site or site-to-site VPN for full subnet routing | Planned |
+| **Bastion Tunneling** | [`bastion-tunneling/`](bastion-tunneling/) | Native SSH/RDP tunneling through Azure Bastion — no public IPs on VMs, identity-aware | Available |
+| **Private Endpoints** | [`private-endpoints/`](private-endpoints/) | Private IP connectivity to Azure PaaS services (Key Vault, Storage, SQL, Cosmos DB) | Available |
+| **VPN Gateway** | [`vpn-gateway/`](vpn-gateway/) | Point-to-site or site-to-site VPN for full subnet routing via OpenVPN | Available |
 
 ## Which Pattern?
 
-- **Single VM** → Bastion Tunneling — simplest, identity-aware, no VM public IP
-- **Azure PaaS service (SQL, Storage, Key Vault)** → Private Endpoints — private IP for managed services
-- **Multiple services across a VNet** → VPN Gateway (P2S) — full subnet routing
+- **Single VM** → [Bastion Tunneling](bastion-tunneling/) — simplest, identity-aware, no VM public IP
+- **Azure PaaS service (SQL, Storage, Key Vault)** → [Private Endpoints](private-endpoints/) — private IP for managed services
+- **Multiple services across a VNet** → [VPN Gateway (P2S)](vpn-gateway/) — full subnet routing
+
+## Combining Patterns
+
+Private Endpoints provide the network path to PaaS services but require Devin to be inside the VNet. Pair them with:
+- **Bastion Tunneling** for quick, single-service access to VMs that can reach the private endpoints
+- **VPN Gateway** for full VNet access including private endpoint DNS resolution
 
 ## Reference
 
