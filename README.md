@@ -74,7 +74,7 @@ automations-and-integrations/
 | Category | Directory | Description | Status |
 |---|---|---|---|
 | **CI/CD** | [`ci-cd/`](ci-cd/) | Trigger Devin from pull requests, issue comments, schedules, and pipeline events | GitHub Actions & Azure DevOps available; others planned |
-| **Network Connectivity** | [`network-connectivity/`](network-connectivity/) | Connect Devin to private resources in AWS, Azure, and GCP VPCs — including [database access patterns](network-connectivity/database-access/) | AWS SSM port-forwarding & database access available; others planned |
+| **Network Connectivity** | [`network-connectivity/`](network-connectivity/) | Connect Devin to private resources in AWS, Azure, and GCP VPCs — including [database access patterns](network-connectivity/database-access/) | All cloud providers available (AWS SSM/VPN/PrivateLink, Azure Bastion/PE/VPN, GCP IAP/PSC, database access) |
 | **Issue Tracking** | [`issue-tracking/`](issue-tracking/) | Trigger Devin from issue transitions in Jira, Linear, ServiceNow | Planned |
 | **Messaging** | [`messaging/`](messaging/) | Slash commands and bots for Slack, Microsoft Teams | Planned |
 | **Observability** | [`observability/`](observability/) | Alert-driven Devin sessions from Datadog, New Relic | Planned |

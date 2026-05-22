@@ -7,14 +7,15 @@ Patterns for connecting Devin to private resources in AWS VPCs.
 | Pattern | Directory | Description | Status |
 |---|---|---|---|
 | **SSM Port Forwarding** | [`ssm-port-forwarding/`](ssm-port-forwarding/) | Encrypted tunnel via SSM Session Manager — no VPN, no public IPs, no inbound rules | Available |
-| **Client VPN** | `client-vpn/` | Full subnet-level routing via AWS Client VPN endpoint | Planned |
-| **PrivateLink** | `privatelink/` | Service-to-service connectivity without VPC peering | Planned |
+| **Client VPN** | [`client-vpn/`](client-vpn/) | Full subnet-level routing via AWS Client VPN endpoint with mutual TLS | Available |
+| **PrivateLink** | [`privatelink/`](privatelink/) | Service-to-service connectivity via VPC endpoints — traffic stays on AWS backbone | Available |
 
 ## Which Pattern?
 
 - **Single port/service** → [SSM Port Forwarding](ssm-port-forwarding/) — simplest, cheapest, zero network exposure
-- **Multiple services across a subnet** → Client VPN — full routing, OpenVPN-compatible
-- **Managed AWS service (RDS, ElastiCache, etc.)** → PrivateLink — private IP for AWS services
+- **Multiple services across a subnet** → [Client VPN](client-vpn/) — full routing, OpenVPN-compatible
+- **Managed AWS service (RDS, Secrets Manager, ECR, etc.)** → [PrivateLink](privatelink/) — private IP for AWS services
+- **Your own service exposed to another VPC** → [PrivateLink (Endpoint Service)](privatelink/) — NLB-backed, no peering needed
 
 ## Reference
 

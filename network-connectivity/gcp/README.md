@@ -6,13 +6,19 @@ Patterns for connecting Devin to private resources in Google Cloud VPCs.
 
 | Pattern | Directory | Description | Status |
 |---|---|---|---|
-| **IAP Tunneling** | `iap-tunneling/` | Identity-Aware Proxy TCP forwarding — no public IPs, IAM-based access | Planned |
-| **Private Service Connect** | `private-service-connect/` | Private IP for Google APIs and your own services | Planned |
+| **IAP Tunneling** | [`iap-tunneling/`](iap-tunneling/) | Identity-Aware Proxy TCP forwarding — no public IPs, IAM-based access, free | Available |
+| **Private Service Connect** | [`private-service-connect/`](private-service-connect/) | Private IP for Google APIs, managed services, and your own published services | Available |
 
 ## Which Pattern?
 
-- **Single VM or service** → IAP Tunneling — free, identity-aware, zero network exposure
-- **Google managed service (Cloud SQL, GCS, etc.)** → Private Service Connect — private IP for Google APIs
+- **Single VM or service** → [IAP Tunneling](iap-tunneling/) — free, identity-aware, zero network exposure
+- **Google managed service (Cloud SQL, GCS, BigQuery, etc.)** → [Private Service Connect](private-service-connect/) — private IP for Google APIs
+- **Your own service published to other VPCs** → [Private Service Connect (Service Attachment)](private-service-connect/) — ILB-backed, consumer-initiated
+
+## Combining Patterns
+
+Private Service Connect provides private IPs for Google APIs but requires Devin to be inside the VPC. Pair it with:
+- **IAP Tunneling** to reach a VM that has access to the PSC endpoints
 
 ## Reference
 
