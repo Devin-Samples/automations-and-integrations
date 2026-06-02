@@ -316,5 +316,5 @@ cloud-sql/
 
 - [Cloud SQL Auth Proxy](https://cloud.google.com/sql/docs/postgres/sql-proxy)
 - [Cloud SQL IAM Database Authentication](https://cloud.google.com/sql/docs/postgres/authentication)
-- [Devin Secrets](https://docs.devin.ai/admin/common-issues#ip-whitelisting)
+- [Devin Secrets](https://docs.devin.ai/product-guides/secrets)
 - [Devin Environment Blueprints](https://docs.devin.ai)
