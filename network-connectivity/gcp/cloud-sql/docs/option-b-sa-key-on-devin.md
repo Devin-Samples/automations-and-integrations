@@ -76,17 +76,10 @@ CREATE USER devin_dev WITH PASSWORD 'SECURE_PASSWORD';
 
 ### 5. Configure Network Access
 
-**Option A: Zscaler**
-- Add Cloud SQL's public or private IP to ZIA/ZPA policy
-- Allow TCP 5432 (as configured in the blueprint) through ZIA/ZPA policy
+The Cloud SQL Auth Proxy connects through Google's secure infrastructure — it **does not** use Authorized Networks or direct TCP connections to the instance IP. This means:
 
-**Option B: Devin Static IPs**
-```bash
-gcloud sql instances patch INSTANCE_NAME \
-  --authorized-networks="DEVIN_IP_1/32,DEVIN_IP_2/32,..."
-```
-
-Full IP list: https://docs.devin.ai/admin/common-issues#ip-whitelisting
+- **Public IP instance:** No additional network configuration needed. The proxy handles connectivity through Google's API.
+- **Private IP instance:** Devin must have a network path into the VPC. Use **Zscaler ZPA** to route traffic to the VPC, or pair with [IAP Tunneling](../../iap-tunneling/) to reach a bastion that has VPC access.
 
 ## Devin Setup
 
