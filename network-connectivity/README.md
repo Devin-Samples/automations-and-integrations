@@ -14,6 +14,7 @@ Patterns and deployable infrastructure for connecting Devin to private resources
 | **[VPN Gateway](azure/vpn-gateway/)** | Azure | Medium | ~$0.04/hr+ | Full site-to-site or point-to-site connectivity |
 | **[IAP Tunneling](gcp/iap-tunneling/)** | GCP | Low | Free (IAP) | Quick access to GCP VMs; identity-aware TCP forwarding |
 | **[Private Service Connect](gcp/private-service-connect/)** | GCP | Low | ~$0.01/hr + data | Google-managed services over private IP |
+| **[Cloud SQL](gcp/cloud-sql/)** | GCP | Low–Med | Varies by option | Cloud SQL PostgreSQL — customer-hosted proxy, SA key, or direct connect |
 | **[Database Access](database-access/)** | Any | Varies | Depends on tunnel | MCP or CLI database connectivity — credential setup, rotation, auth providers |
 
 ### Decision Guide
@@ -61,7 +62,8 @@ network-connectivity/
 │   └── vpn-gateway/                   # ✓ Available — P2S/S2S VPN for full subnet routing
 └── gcp/
     ├── iap-tunneling/                 # ✓ Available — IAP TCP forwarding to GCP VMs
-    └── private-service-connect/       # ✓ Available — Private IP for Google APIs and services
+    ├── private-service-connect/       # ✓ Available — Private IP for Google APIs and services
+    └── cloud-sql/                     # ✓ Available — Cloud SQL PostgreSQL connectivity
 ```
 
 ## Devin Environment Integration
