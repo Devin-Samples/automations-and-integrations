@@ -79,11 +79,11 @@ aws iam put-role-policy \
 aws rds create-db-proxy \
   --db-proxy-name devin-rds-proxy \
   --engine-family POSTGRESQL \
-  --auth '{
+  --auth '[{
     "AuthScheme": "SECRETS",
     "SecretArn": "arn:aws:secretsmanager:REGION:ACCOUNT_ID:secret:devin-db-credentials-XXXXXX",
     "IAMAuth": "DISABLED"
-  }' \
+  }]' \
   --role-arn arn:aws:iam::ACCOUNT_ID:role/devin-rds-proxy-role \
   --vpc-subnet-ids subnet-xxxx subnet-yyyy \
   --vpc-security-group-ids sg-xxxx
