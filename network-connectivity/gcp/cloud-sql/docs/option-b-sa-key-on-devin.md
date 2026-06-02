@@ -118,7 +118,7 @@ maintenance: |
   # /dev/shm is always tmpfs on Linux — unlike /tmp, it is never captured in
   # VM snapshots. Devin strips secret env vars before snapshot save, but files
   # written to disk-backed paths would persist.
-  echo "$GCP_SA_KEY" > /dev/shm/gcp-sa-key.json
+  printf '%s\n' "$GCP_SA_KEY" > /dev/shm/gcp-sa-key.json
   chmod 600 /dev/shm/gcp-sa-key.json
   # Start Cloud SQL Auth Proxy
   cloud-sql-proxy "$CLOUD_SQL_INSTANCE" \
@@ -138,7 +138,7 @@ knowledge:
 
 Enable the PostgreSQL MCP server in Settings > MCP Marketplace:
 
-- **With IAM DB auth:** `postgresql://devin-db@PROJECT_ID.iam@localhost:5432/DB_NAME` (no password)
+- **With IAM DB auth:** `postgresql://devin-db%40PROJECT_ID.iam@localhost:5432/DB_NAME` (no password)
 - **With password auth:** `postgresql://devin_dev:PASSWORD@localhost:5432/DB_NAME`
 
 ## Validation

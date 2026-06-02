@@ -22,7 +22,7 @@ maintenance: |
   # Write SA key to tmpfs (RAM-backed, never written to disk or captured in snapshots).
   # Note: Devin strips secret *env vars* before snapshot save, but files written to
   # /tmp or other disk paths would persist. /dev/shm is always tmpfs on Linux.
-  echo "$GCP_SA_KEY" > /dev/shm/gcp-sa-key.json
+  printf '%s\n' "$GCP_SA_KEY" > /dev/shm/gcp-sa-key.json
   chmod 600 /dev/shm/gcp-sa-key.json
 
   # Start Cloud SQL Auth Proxy in the background
