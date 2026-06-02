@@ -76,9 +76,20 @@ Each pattern includes instructions for integrating with Devin's environment conf
 
 See individual pattern READMEs for specific instructions.
 
-## Database Access
+## Cloud Database Connectivity
 
-For connecting Devin to databases specifically (MCP server setup, CLI configuration, credential management, and private database networking), see the dedicated [Database Access](database-access/) guide. It covers:
+Connecting Devin to a cloud-hosted database (Cloud SQL, RDS, Azure SQL, etc.) follows a **three-layer model**:
+
+| Layer | What It Does | Cloud-Agnostic? |
+|-------|-------------|-----------------|
+| **1. Network Path** | Gets Devin's traffic to the database network (Zscaler ZPA, static IP allowlist, VPN, tunnel) | Yes — same regardless of provider |
+| **2. Transport / Proxy** | Optional proxy for mTLS, connection pooling, or IAM-based auth (Cloud SQL Auth Proxy, RDS Proxy, etc.) | No — provider-specific binary and config |
+| **3. Identity / Auth** | How the connection authenticates (IAM DB auth, service account, managed identity, DB password) | No — provider-specific IAM setup |
+
+**Available provider-specific guides:**
+- **GCP** → [Cloud SQL Connectivity](gcp/cloud-sql/) — three architecture options with detailed setup, cross-cloud mapping table, and example blueprints
+
+For provider-agnostic database access (MCP server setup, CLI configuration, credential management), see the dedicated [Database Access](database-access/) guide. It covers:
 - MCP vs. CLI access models and when to use each
 - Credential creation, rotation, and auth provider configuration
 - Per-database setup examples (PostgreSQL, MySQL, MongoDB, Snowflake, etc.)
@@ -110,13 +121,13 @@ All patterns include [Devin environment integration](#devin-environment-integrat
 
 ### Can Devin connect to a database behind a firewall?
 
-Yes — see the dedicated [Database Access](database-access/) guide. The recommended approach:
+Yes. Follow the [three-layer model](#cloud-database-connectivity):
 
-1. **Network path** — Use one of the tunnel or VPN patterns above to make the database reachable from Devin's session
-2. **MCP server** — Enable the appropriate database MCP in Settings > MCP Marketplace (PostgreSQL, MySQL, SQL Server, Snowflake, etc.)
-3. **Credentials** — Store the connection string as a Devin Secret, referenced by the MCP config
+1. **Network path** (Layer 1) — Use one of the tunnel or VPN patterns above to make the database reachable from Devin's session
+2. **Transport / proxy** (Layer 2) — If needed, run a provider-specific proxy (e.g., [Cloud SQL Auth Proxy](gcp/cloud-sql/) for GCP, RDS Proxy for AWS) for mTLS and IAM auth
+3. **Identity / auth** (Layer 3) — Store credentials as Devin Secrets, enable the appropriate MCP in Settings > MCP Marketplace
 
-For details on credential creation, rotation, and per-database setup, see [Database Access](database-access/).
+For cloud-hosted databases, see [Cloud Database Connectivity](#cloud-database-connectivity) for provider-specific guides. For general database access patterns (MCP setup, CLI, credential management), see [Database Access](database-access/).
 
 ### Does Devin have a static IP I can allowlist?
 

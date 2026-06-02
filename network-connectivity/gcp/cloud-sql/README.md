@@ -2,6 +2,8 @@
 
 Connect Devin to GCP Cloud SQL PostgreSQL databases — customer-hosted proxy, service account key, and direct connect options with Zscaler ZPA integration.
 
+> **This guide is GCP-specific, but the architecture follows a provider-agnostic three-layer model** (network path → transport/proxy → identity/auth) that applies equally to AWS RDS, Azure SQL, and other cloud-hosted databases. See [Generalizing to Other Cloud Providers](#generalizing-to-other-cloud-providers) for cross-cloud mapping.
+
 ## Architecture
 
 ```
@@ -305,6 +307,62 @@ cloud-sql/
     ├── blueprint-sa-key-proxy.yaml            # Devin blueprint for Option B
     └── blueprint-direct-connect.yaml          # Devin blueprint for Option C
 ```
+
+## Generalizing to Other Cloud Providers
+
+This guide is GCP Cloud SQL-specific, but the architecture follows a **three-layer model** that applies to any cloud-hosted database. Only the middle layers change per provider — the network path and the overall pattern are the same.
+
+### Three-Layer Model
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  Layer 1: Network Path (cloud-agnostic)                        │
+│  How Devin's traffic reaches the database network               │
+│  ├─ Zscaler ZPA          (zero-trust, existing corp path)       │
+│  ├─ Static IP allowlist  (simplest, Devin egress IPs)           │
+│  ├─ VPN                  (full subnet routing)                  │
+│  └─ Cloud tunnel         (SSM / Bastion / IAP)                  │
+├─────────────────────────────────────────────────────────────────┤
+│  Layer 2: Transport / Proxy (provider-specific)                 │
+│  Optional proxy for mTLS, connection pooling, IAM auth          │
+│  ├─ GCP:   Cloud SQL Auth Proxy                                 │
+│  ├─ AWS:   RDS Proxy / direct TLS                                │
+│  └─ Azure: Private Endpoint / direct TLS                         │
+├─────────────────────────────────────────────────────────────────┤
+│  Layer 3: Identity / Auth (provider-specific)                   │
+│  How the connection authenticates to the database               │
+│  ├─ GCP:   GSA + IAM DB auth  or  DB password                   │
+│  ├─ AWS:   IAM DB auth  or  DB password                          │
+│  └─ Azure: AAD auth  or  SQL auth password                       │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Option Patterns Across Providers
+
+The three options documented here map to equivalent patterns on other clouds:
+
+| Pattern | GCP (this guide) | AWS Equivalent | Azure Equivalent |
+|---------|------------------|----------------|------------------|
+| **A: Customer-hosted proxy** | Cloud SQL Auth Proxy on GCE/Cloud Run, exposed via Zscaler | RDS Proxy or pgbouncer on EC2, exposed via Zscaler or PrivateLink | Azure SQL Private Endpoint, exposed via Zscaler or ExpressRoute |
+| **B: Cloud credential on Devin** | GCP SA key → Cloud SQL Auth Proxy in session | AWS IAM user access key → `aws rds generate-db-auth-token` | Azure AD service principal → token-based SQL auth |
+| **C: Direct connect** | PostgreSQL over TLS, Authorized Networks | PostgreSQL over TLS, Security Group allowlist | Azure SQL over TLS, firewall IP rules |
+
+### What Stays the Same Across Providers
+
+- **Network path** — Zscaler ZPA and static IP allowlisting work identically regardless of whether the target is Cloud SQL, RDS, or Azure SQL
+- **Devin Secrets** — credential storage and injection is provider-agnostic
+- **Blueprint structure** — `initialize` (install tooling), `maintenance` (start proxy/tunnel), `knowledge` (connection info)
+- **Database permissions model** — dedicated read/read-write role, no DDL, no superuser
+- **Ephemeral VM considerations** — proxy must restart each session, credentials via env vars, sensitive files to `/dev/shm/`
+
+### What Changes Per Provider
+
+- **Proxy binary and flags** — `cloud-sql-proxy` vs `aws rds generate-db-auth-token` vs direct Azure connection
+- **IAM role / service account setup** — GSA vs IAM user/role vs Azure AD service principal
+- **Cloud-native auth mechanism** — Cloud SQL IAM DB auth vs RDS IAM auth vs Azure AD token auth
+- **Network allowlist configuration** — Cloud SQL Authorized Networks vs Security Groups vs Azure SQL firewall rules
+
+For provider-agnostic database access patterns (MCP setup, CLI configuration, credential management), see [Database Access Patterns](../../database-access/).
 
 ## Related Patterns
 
