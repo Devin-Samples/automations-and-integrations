@@ -38,8 +38,9 @@ automations-and-integrations/
 │   │   ├── private-endpoints/         #     Private IP for PaaS services (planned)
 │   │   └── vpn-gateway/               #     Point-to-site / site-to-site VPN (planned)
 │   └── gcp/                           #   GCP connectivity patterns
-│       ├── iap-tunneling/             #     IAP TCP forwarding (planned)
-│       └── private-service-connect/   #     Private IP for Google APIs (planned)
+│       ├── iap-tunneling/             #     IAP TCP forwarding (available)
+│       ├── private-service-connect/   #     Private IP for Google APIs (available)
+│       └── cloud-sql/                 #     Cloud SQL PostgreSQL connectivity (available)
 │
 ├── issue-tracking/                    # Issue tracker integrations
 │   └── jira/                          #   Jira webhook receiver (planned)

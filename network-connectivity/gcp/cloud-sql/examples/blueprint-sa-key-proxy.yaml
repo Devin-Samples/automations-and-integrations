@@ -1,0 +1,42 @@
+# Devin Environment Blueprint: GCP Cloud SQL via Service Account Key + Auth Proxy
+#
+# Architecture: Option B — SA key stored as Devin secret, Cloud SQL Auth Proxy
+# runs inside the Devin session.
+#
+# Required Devin Secrets (org-scoped):
+#   GCP_SA_KEY           - Full JSON content of the GCP service account key
+#   CLOUD_SQL_INSTANCE   - Instance connection name (project:region:instance)
+#   DB_NAME              - Database name
+#   DB_USER              - PostgreSQL username (e.g., devin_dev for password auth,
+#                          or devin-db@PROJECT_ID.iam for IAM DB auth)
+#   DB_PASSWORD           - (Optional, only if using password auth)
+#
+# See: docs/option-b-sa-key-on-devin.md
+
+initialize: |
+  # Install Cloud SQL Auth Proxy (persists in snapshot)
+  curl -o /usr/local/bin/cloud-sql-proxy \
+    https://storage.googleapis.com/cloud-sql-connectors/cloud-sql-proxy/v2.14.2/cloud-sql-proxy.linux.amd64
+  chmod +x /usr/local/bin/cloud-sql-proxy
+
+maintenance: |
+  # Write SA key to tmpfs (RAM-backed, never written to disk or captured in snapshots).
+  # Note: Devin strips secret *env vars* before snapshot save, but files written to
+  # /tmp or other disk paths would persist. /dev/shm is always tmpfs on Linux.
+  printf '%s\n' "$GCP_SA_KEY" > /dev/shm/gcp-sa-key.json
+  chmod 600 /dev/shm/gcp-sa-key.json
+
+  # Start Cloud SQL Auth Proxy in the background
+  cloud-sql-proxy "$CLOUD_SQL_INSTANCE" \
+    --credentials-file=/dev/shm/gcp-sa-key.json \
+    --auto-iam-authn \
+    --port 5432 &
+  sleep 3
+
+knowledge:
+  - name: database
+    contents: |
+      Cloud SQL dev database is available at localhost:5432 via Cloud SQL Auth Proxy.
+      Connect with psql: psql -h localhost -p 5432 -U $DB_USER -d $DB_NAME
+      DATABASE_URL (IAM auth):    postgresql://$DB_USER@localhost:5432/$DB_NAME
+      DATABASE_URL (password auth): postgresql://$DB_USER:$DB_PASSWORD@localhost:5432/$DB_NAME

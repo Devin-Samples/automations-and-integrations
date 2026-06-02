@@ -1,0 +1,22 @@
+# Devin Environment Blueprint: GCP Cloud SQL via Direct Connect
+#
+# Architecture: Option C — Direct PostgreSQL connection over TLS.
+# No proxy binary, no GCP service account. Just a connection string.
+#
+# Required Devin Secrets (org-scoped):
+#   DB_HOST       - Cloud SQL public IP or Zscaler-reachable hostname
+#   DB_USER       - PostgreSQL username (e.g., devin_dev)
+#   DB_PASSWORD   - PostgreSQL password
+#   DB_NAME       - Database name
+#
+# See: docs/option-c-direct-connect.md
+
+# No initialize or maintenance commands needed.
+# psql and libpq are already available in Devin sessions.
+
+knowledge:
+  - name: database
+    contents: |
+      Dev database (Cloud SQL PostgreSQL) is at $DB_HOST:5432.
+      Connect with: psql "postgresql://$DB_USER:$DB_PASSWORD@$DB_HOST:5432/$DB_NAME?sslmode=require"
+      Always use sslmode=require for Cloud SQL connections.
