@@ -35,5 +35,5 @@ knowledge:
   - name: database
     contents: |
       Cloud SQL dev database is available at localhost:5432 via Cloud SQL Auth Proxy.
-      Connect with psql: psql -h localhost -p 5432 -d $DB_NAME
-      Or use connection string: postgresql://localhost:5432/$DB_NAME
+      Connect with psql: psql -h localhost -p 5432 -U $DB_USER -d $DB_NAME
+      Or set DATABASE_URL=postgresql://$DB_USER@localhost:5432/$DB_NAME
