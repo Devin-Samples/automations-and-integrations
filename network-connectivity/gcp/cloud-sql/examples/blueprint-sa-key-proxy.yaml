@@ -7,7 +7,8 @@
 #   GCP_SA_KEY           - Full JSON content of the GCP service account key
 #   CLOUD_SQL_INSTANCE   - Instance connection name (project:region:instance)
 #   DB_NAME              - Database name
-#   DB_USER              - (Optional, only if using password auth instead of IAM DB auth)
+#   DB_USER              - PostgreSQL username (e.g., devin_dev for password auth,
+#                          or devin-db@PROJECT_ID.iam for IAM DB auth)
 #   DB_PASSWORD           - (Optional, only if using password auth)
 #
 # See: docs/option-b-sa-key-on-devin.md

@@ -92,7 +92,7 @@ Add as **org-scoped** Devin Secrets (Settings > Secrets):
 | `GCP_SA_KEY` | Full JSON content of `devin-sa-key.json` | Multi-line JSON |
 | `CLOUD_SQL_INSTANCE` | Instance connection name | Format: `project:region:instance` |
 | `DB_NAME` | Database name | e.g., `dev_db` |
-| `DB_USER` | (Only if using password auth) | e.g., `devin_dev` |
+| `DB_USER` | PostgreSQL username | `devin_dev` (password auth) or `devin-db@PROJECT_ID.iam` (IAM auth) |
 | `DB_PASSWORD` | (Only if using password auth) | |
 
 ### 2. Environment Blueprint
