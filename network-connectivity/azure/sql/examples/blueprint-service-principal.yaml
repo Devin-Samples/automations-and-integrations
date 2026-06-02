@@ -1,0 +1,43 @@
+# Devin Environment Blueprint: Azure SQL via Service Principal + AAD Token Auth
+#
+# Architecture: Option B -- Service principal credentials stored as Devin secrets,
+# AAD token acquired at session start for token-based SQL authentication.
+#
+# Required Devin Secrets (org-scoped):
+#   AZURE_TENANT_ID      - Azure AD tenant ID (GUID)
+#   AZURE_CLIENT_ID      - Service principal app ID (GUID)
+#   AZURE_CLIENT_SECRET  - Service principal client secret
+#   AZURE_SQL_SERVER     - Azure SQL server hostname (server.database.windows.net)
+#   DB_NAME              - Database name
+#
+# See: docs/option-b-service-principal-on-devin.md
+
+initialize: |
+  # Install Azure CLI (persists in snapshot)
+  curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
+
+maintenance: |
+  # Log in as service principal
+  az login --service-principal \
+    --username "$AZURE_CLIENT_ID" \
+    --password "$AZURE_CLIENT_SECRET" \
+    --tenant "$AZURE_TENANT_ID" \
+    --output none
+
+  # Acquire AAD token for Azure SQL and write to tmpfs.
+  # /dev/shm is always tmpfs on Linux -- never written to disk or captured
+  # in snapshots. Devin strips secret env vars before snapshot save, but
+  # files written to disk-backed paths would persist.
+  az account get-access-token \
+    --resource https://database.windows.net/ \
+    --query accessToken -o tsv > /dev/shm/azure-sql-token
+  chmod 600 /dev/shm/azure-sql-token
+
+knowledge:
+  - name: database
+    contents: |
+      Azure SQL dev database is available at $AZURE_SQL_SERVER:1433 via AAD token auth.
+      AAD token location: /dev/shm/azure-sql-token
+      Connect with sqlcmd: sqlcmd -S $AZURE_SQL_SERVER -d $DB_NAME -G --access-token $(cat /dev/shm/azure-sql-token)
+      Token expires in ~1 hour. Refresh: az account get-access-token --resource https://database.windows.net/ --query accessToken -o tsv
+      For SQL auth fallback (if configured): sqlcmd -S $AZURE_SQL_SERVER -d $DB_NAME -U $DB_USER -P $DB_PASSWORD

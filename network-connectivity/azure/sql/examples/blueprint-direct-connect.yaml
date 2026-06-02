@@ -1,0 +1,24 @@
+# Devin Environment Blueprint: Azure SQL via Direct Connect
+#
+# Architecture: Option C -- Direct SQL connection over TLS.
+# No Azure CLI, no service principal. Just a connection string.
+# Azure SQL always enforces TLS -- transport encryption is guaranteed.
+#
+# Required Devin Secrets (org-scoped):
+#   DB_HOST       - Azure SQL server hostname (server.database.windows.net)
+#   DB_USER       - SQL auth username (e.g., devin_dev)
+#   DB_PASSWORD   - SQL auth password
+#   DB_NAME       - Database name
+#
+# See: docs/option-c-direct-connect.md
+
+# No initialize or maintenance commands needed.
+# sqlcmd and standard SQL client libraries connect directly over TLS.
+
+knowledge:
+  - name: database
+    contents: |
+      Dev database (Azure SQL) is at $DB_HOST:1433.
+      Connect with: sqlcmd -S $DB_HOST -d $DB_NAME -U $DB_USER -P $DB_PASSWORD
+      Connection string: Server=tcp:$DB_HOST,1433;Database=$DB_NAME;User ID=$DB_USER;Password=$DB_PASSWORD;Encrypt=true;TrustServerCertificate=false;
+      TLS is always enforced by Azure SQL -- no sslmode flag needed.
