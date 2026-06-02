@@ -125,7 +125,8 @@ knowledge:
     contents: |
       Cloud SQL dev DB is available at localhost:5432 via Auth Proxy.
       Connect with: psql -h localhost -p 5432 -U $DB_USER -d $DB_NAME
-      Or set DATABASE_URL=postgresql://$DB_USER:$DB_PASSWORD@localhost:5432/$DB_NAME
+      DATABASE_URL (IAM auth):    postgresql://$DB_USER@localhost:5432/$DB_NAME
+      DATABASE_URL (password auth): postgresql://$DB_USER:$DB_PASSWORD@localhost:5432/$DB_NAME
 ```
 
 ### 3. MCP Server (Optional)
