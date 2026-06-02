@@ -12,7 +12,7 @@ The Auth Proxy handles mTLS encryption and (optionally) IAM-based database authe
 
 - A GCP project with Cloud SQL PostgreSQL instance(s)
 - Cloud SQL Admin API enabled in the project
-- Network path from Devin to Cloud SQL (Zscaler or Devin static IPs in Authorized Networks)
+- Network path from Devin to Google APIs (internet access); for private-IP-only instances, Zscaler ZPA or IAP tunnel into the VPC
 - Devin org admin access to configure secrets and environment blueprints
 
 ## Customer Setup (GCP Side)
@@ -125,7 +125,7 @@ knowledge:
     contents: |
       Cloud SQL dev DB is available at localhost:5432 via Auth Proxy.
       Connect with: psql -h localhost -p 5432 -U $DB_USER -d $DB_NAME
-      Or set DATABASE_URL=postgresql://$DB_USER@localhost:5432/$DB_NAME
+      Or set DATABASE_URL=postgresql://$DB_USER:$DB_PASSWORD@localhost:5432/$DB_NAME
 ```
 
 ### 3. MCP Server (Optional)
