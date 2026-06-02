@@ -78,16 +78,18 @@ ALTER DEFAULT PRIVILEGES IN SCHEMA app_schema
 GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA app_schema TO devin_dev;
 ```
 
-### 4. Verify TLS Configuration
+### 4. Enforce TLS
 
-RDS PostgreSQL enforces TLS by default. To require TLS for the `devin_dev` role:
+RDS PostgreSQL supports TLS by default, but does not require it unless configured. To enforce TLS for all connections:
 
-```sql
--- Force SSL for the Devin user (PostgreSQL 12+)
-ALTER ROLE devin_dev SET ssl = on;
+```bash
+# Set rds.force_ssl = 1 in the DB parameter group
+aws rds modify-db-parameter-group \
+  --db-parameter-group-name your-parameter-group \
+  --parameters "ParameterName=rds.force_ssl,ParameterValue=1,ApplyMethod=pending-reboot"
 ```
 
-Alternatively, use the `rds.force_ssl` parameter group setting to enforce TLS for all connections.
+> **Note:** Per-role SSL enforcement is not possible in PostgreSQL/RDS — `ssl` is a server-level parameter. Use `rds.force_ssl` for server-wide enforcement, and always specify `sslmode=require` in client connection strings.
 
 ## Devin Setup
 

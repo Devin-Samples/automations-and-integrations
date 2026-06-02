@@ -152,7 +152,7 @@ knowledge:
       RDS PostgreSQL dev DB is available at $RDS_ENDPOINT:$RDS_PORT.
       IAM DB auth — generate a fresh token:
         export PGPASSWORD=$(aws rds generate-db-auth-token --hostname $RDS_ENDPOINT --port $RDS_PORT --username $DB_USER --region $AWS_DEFAULT_REGION)
-        psql -h $RDS_ENDPOINT -p $RDS_PORT -U $DB_USER -d $DB_NAME "sslmode=require"
+        psql "host=$RDS_ENDPOINT port=$RDS_PORT user=$DB_USER dbname=$DB_NAME sslmode=require"
       Password auth:
         psql "postgresql://$DB_USER:$DB_PASSWORD@$RDS_ENDPOINT:$RDS_PORT/$DB_NAME?sslmode=require"
       Set AWS_SHARED_CREDENTIALS_FILE=/dev/shm/.aws/credentials if aws CLI cannot find credentials.
@@ -181,7 +181,7 @@ export PGPASSWORD=$(aws rds generate-db-auth-token \
   --region $AWS_DEFAULT_REGION)
 
 # Connect with IAM auth
-psql -h $RDS_ENDPOINT -p $RDS_PORT -U $DB_USER -d $DB_NAME "sslmode=require"
+psql "host=$RDS_ENDPOINT port=$RDS_PORT user=$DB_USER dbname=$DB_NAME sslmode=require"
 
 # Or connect with password auth
 psql "postgresql://$DB_USER:$DB_PASSWORD@$RDS_ENDPOINT:$RDS_PORT/$DB_NAME?sslmode=require"

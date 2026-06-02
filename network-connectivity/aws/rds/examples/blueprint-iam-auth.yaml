@@ -41,6 +41,6 @@ knowledge:
       RDS PostgreSQL dev database is available at $RDS_ENDPOINT:$RDS_PORT.
       IAM DB auth — generate a fresh token (valid 15 min):
         export PGPASSWORD=$(aws rds generate-db-auth-token --hostname $RDS_ENDPOINT --port $RDS_PORT --username $DB_USER --region $AWS_DEFAULT_REGION)
-        psql -h $RDS_ENDPOINT -p $RDS_PORT -U $DB_USER -d $DB_NAME "sslmode=require"
+        psql "host=$RDS_ENDPOINT port=$RDS_PORT user=$DB_USER dbname=$DB_NAME sslmode=require"
       Password auth:
         psql "postgresql://$DB_USER:$DB_PASSWORD@$RDS_ENDPOINT:$RDS_PORT/$DB_NAME?sslmode=require"
