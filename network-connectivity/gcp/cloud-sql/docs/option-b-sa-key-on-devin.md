@@ -116,6 +116,7 @@ maintenance: |
   # Start Cloud SQL Auth Proxy
   cloud-sql-proxy "$CLOUD_SQL_INSTANCE" \
     --credentials-file=/dev/shm/gcp-sa-key.json \
+    --auto-iam-authn \
     --port 5432 &
   sleep 3
 
@@ -143,7 +144,7 @@ Enable the PostgreSQL MCP server in Settings > MCP Marketplace:
 ps aux | grep cloud-sql-proxy
 
 # Connect (IAM DB auth — no password prompt)
-psql -h localhost -p 5432 -d $DB_NAME
+psql -h localhost -p 5432 -U $DB_USER -d $DB_NAME
 
 # Connect (password auth)
 psql -h localhost -p 5432 -U devin_dev -d $DB_NAME

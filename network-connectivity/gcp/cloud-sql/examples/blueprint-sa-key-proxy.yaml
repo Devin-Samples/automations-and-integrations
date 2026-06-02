@@ -29,6 +29,7 @@ maintenance: |
   # Start Cloud SQL Auth Proxy in the background
   cloud-sql-proxy "$CLOUD_SQL_INSTANCE" \
     --credentials-file=/dev/shm/gcp-sa-key.json \
+    --auto-iam-authn \
     --port 5432 &
   sleep 3
 
