@@ -78,7 +78,7 @@ CREATE USER devin_dev WITH PASSWORD 'SECURE_PASSWORD';
 
 **Option A: Zscaler**
 - Add Cloud SQL's public or private IP to ZIA/ZPA policy
-- Allow TCP 3307 (proxy default) or configure proxy to use 5432
+- Allow TCP 5432 (as configured in the blueprint) through ZIA/ZPA policy
 
 **Option B: Devin Static IPs**
 ```bash
