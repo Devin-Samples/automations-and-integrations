@@ -12,7 +12,7 @@ Alternatively, the IAM user can be used only for RDS API access (e.g., `rds:Desc
 
 - An AWS account with RDS PostgreSQL instance(s)
 - IAM DB authentication enabled on the RDS instance (for IAM DB auth flow)
-- Network path from Devin to the RDS endpoint (internet access for public instances; Zscaler ZPA for private instances)
+- Network path from Devin to the RDS endpoint (internet access for public instances; for private instances use SSM port forwarding, Zscaler ZPA, VPN, or PrivateLink — see [Network Path Options](../README.md#network-path-options))
 - Devin org admin access to configure secrets and environment blueprints
 
 ## Customer Setup (AWS Side)
@@ -103,7 +103,7 @@ CREATE USER devin_dev WITH PASSWORD 'SECURE_PASSWORD';
 For IAM DB authentication, Devin must be able to reach the RDS endpoint:
 
 - **Public instance:** Add Devin's [static egress IPs](https://docs.devin.ai/admin/common-issues#ip-whitelisting) to the RDS Security Group for TCP/5432
-- **Private instance:** Use **Zscaler ZPA** to route traffic to the VPC, or pair with [SSM Port Forwarding](../../ssm-port-forwarding/) to reach a bastion that has VPC access
+- **Private instance:** Use [SSM Port Forwarding](../../ssm-port-forwarding/) for a cloud-native tunnel (no VPN, no public IPs), or route through Zscaler ZPA, VPN, or PrivateLink
 
 ## Devin Setup
 

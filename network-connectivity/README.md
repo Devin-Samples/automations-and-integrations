@@ -84,7 +84,7 @@ Connecting Devin to a cloud-hosted database (Cloud SQL, RDS, Azure SQL, etc.) fo
 
 | Layer | What It Does | Cloud-Agnostic? |
 |-------|-------------|-----------------|
-| **1. Network Path** | Gets Devin's traffic to the database network (Zscaler ZPA, static IP allowlist, VPN, tunnel) | Yes — same regardless of provider |
+| **1. Network Path** | Gets Devin's traffic to the database network — only required when there is no public path to the target resource. Options include static IP allowlist, cloud-native tunnels (SSM, IAP, Bastion), VPN, or a zero-trust proxy such as Zscaler ZPA | Yes — same regardless of provider |
 | **2. Transport / Proxy** | Optional proxy for mTLS, connection pooling, or IAM-based auth (Cloud SQL Auth Proxy, RDS Proxy, etc.) | No — provider-specific binary and config |
 | **3. Identity / Auth** | How the connection authenticates (IAM DB auth, service account, managed identity, DB password) | No — provider-specific IAM setup |
 

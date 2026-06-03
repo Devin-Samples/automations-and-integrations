@@ -4,14 +4,14 @@
 
 ## Overview
 
-The customer deploys an RDS Proxy (AWS managed) or pgbouncer on EC2 with an IAM role attached natively — no access key is ever generated. Devin reaches the proxied PostgreSQL endpoint through the existing network path (typically Zscaler ZPA) and authenticates with a standard database user and password.
+The customer deploys an RDS Proxy (AWS managed) or pgbouncer on EC2 with an IAM role attached natively — no access key is ever generated. Devin reaches the proxied PostgreSQL endpoint through an appropriate network path and authenticates with a standard database user and password.
 
-This mirrors how human developers typically access the database: through a corporate zero-trust network to a database endpoint, authenticating with DB credentials, without holding AWS access keys on their machines.
+This mirrors how human developers typically access the database: through a corporate network path to a database endpoint, authenticating with DB credentials, without holding AWS access keys on their machines.
 
 ## Prerequisites
 
 - An AWS account with RDS PostgreSQL instance(s)
-- A network path from Devin to the customer's AWS environment (Zscaler ZPA recommended)
+- A network path from Devin to the customer's AWS environment (static IP allowlist, SSM port forwarding, Zscaler ZPA, VPN, or PrivateLink — see [Network Path Options](../README.md#network-path-options))
 - Devin org admin access to configure secrets
 
 ## Customer Setup (AWS Side)
@@ -122,13 +122,22 @@ CONF
 
 ### 4. Configure Network Access
 
-**If using Zscaler ZPA:**
+**If using static IP allowlist (simplest):**
+- Open Security Group for TCP/5432 from Devin's [static egress IPs](https://docs.devin.ai/admin/common-issues#ip-whitelisting) to the proxy
+- Requires the proxy to have a public IP or be in a public subnet
+
+**If using SSM Port Forwarding (private, no VPN needed):**
+- See [SSM Port Forwarding](../../ssm-port-forwarding/) — encrypted tunnel via Systems Manager
+- No inbound security group rules, no public IPs needed
+
+**If using Zscaler ZPA (if already deployed):**
 - Add the RDS Proxy endpoint (or EC2 proxy internal IP) as a ZPA Application Segment
 - Protocol: TCP, Port: 5432
 - Assign access policy consistent with existing Devin application segments
 
-**If using direct access:**
-- Open Security Group for TCP/5432 from Devin's [static egress IPs](https://docs.devin.ai/admin/common-issues#ip-whitelisting) to the proxy
+**If using VPN:**
+- Configure OpenVPN or AWS Client VPN with routing to the proxy subnet
+- See [Client VPN](../../client-vpn/) or [Devin VPN docs](https://docs.devin.ai/onboard-devin/vpn)
 
 ### 5. Create the Database Role
 
@@ -161,7 +170,7 @@ Add the following as **org-scoped** Devin Secrets (Settings > Secrets):
 
 | Secret Name | Value | Example |
 |---|---|---|
-| `DB_HOST` | RDS Proxy endpoint or EC2 proxy hostname (Zscaler-reachable) | `devin-rds-proxy.proxy-xxxx.REGION.rds.amazonaws.com` |
+| `DB_HOST` | RDS Proxy endpoint or EC2 proxy hostname (reachable via your chosen network path) | `devin-rds-proxy.proxy-xxxx.REGION.rds.amazonaws.com` |
 | `DB_USER` | PostgreSQL username | `devin_dev` |
 | `DB_PASSWORD` | PostgreSQL password | (secure password) |
 | `DB_NAME` | Database name | `dev_db` |
@@ -210,6 +219,6 @@ DROP TABLE app_schema.test_table;
 |---|---|
 | AWS credentials on Devin | **None** |
 | Key rotation required | **No** — no access key exists |
-| Transport encryption | TLS (RDS enforced) + Zscaler |
+| Transport encryption | TLS (RDS enforced) + network path encryption (varies by option) |
 | Blast radius if Devin secret leaks | Scoped DB user/password only — no AWS IAM access |
-| Audit trail | RDS audit logs show `devin_dev` queries; Zscaler logs show network access |
+| Audit trail | RDS audit logs show `devin_dev` queries; network path logs (ZPA, SSM, VPN) show access |

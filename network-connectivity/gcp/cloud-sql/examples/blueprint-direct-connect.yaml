@@ -4,7 +4,7 @@
 # No proxy binary, no GCP service account. Just a connection string.
 #
 # Required Devin Secrets (org-scoped):
-#   DB_HOST       - Cloud SQL public IP or Zscaler-reachable hostname
+#   DB_HOST       - Cloud SQL public IP (or hostname reachable via your network path)
 #   DB_USER       - PostgreSQL username (e.g., devin_dev)
 #   DB_PASSWORD   - PostgreSQL password
 #   DB_NAME       - Database name

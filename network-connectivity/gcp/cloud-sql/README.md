@@ -1,6 +1,8 @@
 # GCP Cloud SQL Connectivity
 
-Connect Devin to GCP Cloud SQL PostgreSQL databases — customer-hosted proxy, service account key, and direct connect options with Zscaler ZPA integration.
+Connect Devin to GCP Cloud SQL PostgreSQL databases — customer-hosted proxy, service account key, and direct connect options.
+
+> **Network path is only required when there is no public route to the target resource.** If Cloud SQL has a public IP and you allowlist Devin's static egress IPs (or use Authorized Networks), no proxy or tunnel is needed. When private networking is required, several options exist: cloud-native tunnels like [IAP Tunneling](../iap-tunneling/), zero-trust proxies such as Zscaler ZPA, VPN, or Private Service Connect. Choose the option that fits your existing infrastructure.
 
 > **This guide is GCP-specific, but the architecture follows a provider-agnostic three-layer model** (network path → transport/proxy → identity/auth) that applies equally to AWS RDS, Azure SQL, and other cloud-hosted databases. See [Generalizing to Other Cloud Providers](#generalizing-to-other-cloud-providers) for cross-cloud mapping.
 
@@ -19,9 +21,12 @@ Connect Devin to GCP Cloud SQL PostgreSQL databases — customer-hosted proxy, s
 │                          │ TCP 5432                                   │
 │                          ▼                                           │
 │             ┌────────────────────────┐                               │
-│             │  Network Path          │                               │
+│             │  Network Path (if no   │                               │
+│             │  public route exists)  │                               │
+│             │  ├─ Static IP Allowlist│                               │
+│             │  ├─ IAP Tunneling      │                               │
 │             │  ├─ Zscaler ZPA        │                               │
-│             │  └─ Static IP Allowlist│                               │
+│             │  └─ VPN / PSC          │                               │
 │             └────────────┬───────────┘                               │
 └──────────────────────────┼───────────────────────────────────────────┘
                            │
@@ -54,15 +59,15 @@ Connect Devin to GCP Cloud SQL PostgreSQL databases — customer-hosted proxy, s
 
 **Recommended for production.** All GCP identity stays on the customer side. Devin holds only a scoped database password — no GCP service account key ever leaves GCP.
 
-This mirrors how human developers typically connect: through a corporate network (e.g., Zscaler ZPA) to a database endpoint, authenticating with a DB user, without holding service account keys on their laptops.
+This mirrors how human developers typically connect: through a corporate network path (e.g., a zero-trust proxy like Zscaler ZPA, a VPN, or a cloud-native tunnel like IAP) to a database endpoint, authenticating with a DB user, without holding service account keys on their laptops.
 
 ```
 ┌──────────────────────────────────────────────────────────────────────┐
 │                       Devin Session (microVM)                        │
 │                                                                      │
 │  App Under Dev ──┐                                                  │
-│                  ├── TCP 5432 ──► Zscaler ZPA ──┐                   │
-│  MCP PostgreSQL ─┘                              │                   │
+│                  ├── TCP 5432 ──► Network Path ─┐                   │
+│  MCP PostgreSQL ─┘     (ZPA / IAP / VPN / etc.) │                   │
 │                                                  │                   │
 │  Devin Secrets:                                  │                   │
 │    DB_HOST · DB_USER · DB_PASSWORD · DB_NAME     │                   │
@@ -93,7 +98,7 @@ This mirrors how human developers typically connect: through a corporate network
 - **No GCP credentials on Devin** — eliminates key rotation, leakage risk, and credential management
 - **Cloud SQL can remain private-IP only** — no public IP required
 - **Devin blueprint is minimal** — no proxy binary, no gcloud CLI needed
-- **Extends existing network patterns** — if Zscaler ZPA already routes Devin traffic (e.g., for GitHub Enterprise), adding Cloud SQL is an incremental ZPA config change
+- **Extends existing network patterns** — if you already use a proxy or tunnel for Devin traffic (e.g., Zscaler ZPA for GitHub Enterprise, or IAP for other GCP resources), adding Cloud SQL is an incremental configuration change on whichever path you already have
 
 ### Setup
 
@@ -102,7 +107,7 @@ See [Customer-Hosted Proxy Setup](docs/option-a-customer-hosted-proxy.md) for de
 **Summary:**
 1. Customer deploys a small GCE VM (or Cloud Run service) with the GSA as its instance service account
 2. `cloud-sql-proxy` runs on the VM, listening on port 5432
-3. The proxy VM is added as a Zscaler ZPA Application Segment
+3. The proxy VM is exposed to Devin via an existing network path (Zscaler ZPA, IAP tunnel, static IP allowlist, etc.)
 4. Devin stores `DB_HOST`, `DB_USER`, `DB_PASSWORD`, `DB_NAME` as org-scoped secrets
 
 ---
@@ -125,7 +130,7 @@ See [Customer-Hosted Proxy Setup](docs/option-a-customer-hosted-proxy.md) for de
 │  Devin Secrets:          │                                           │
 │    GCP_SA_KEY · CLOUD_SQL_INSTANCE                                  │
 └──────────────────────────┼───────────────────────────────────────────┘
-                           │ mTLS (via Zscaler or static IP)
+                           │ mTLS (via network path — see options below)
                            ▼
               ┌────────────────────────────────────────────────────────┐
               │  Customer GCP Project                                  │
@@ -172,8 +177,8 @@ See [Service Account Key Setup](docs/option-b-sa-key-on-devin.md) for detailed s
 │                       Devin Session (microVM)                        │
 │                                                                      │
 │  App Under Dev ──┐                                                  │
-│                  ├── TCP 5432 ──► Zscaler ZPA / Static IP ──┐      │
-│  MCP PostgreSQL ─┘                                           │      │
+│                  ├── TCP 5432 ──► Network Path ─────────────┐      │
+│  MCP PostgreSQL ─┘   (static IP / IAP / ZPA / VPN)          │      │
 │                                                              │      │
 │  Devin Secrets:                                              │      │
 │    DB_HOST · DB_USER · DB_PASSWORD · DB_NAME                 │      │
@@ -196,7 +201,7 @@ See [Service Account Key Setup](docs/option-b-sa-key-on-devin.md) for detailed s
 
 ### Trade-offs
 
-- Cloud SQL must have a **public IP** (unless routed through Zscaler ZPA)
+- Cloud SQL must have a **public IP** (unless routed through a private network path such as IAP tunneling, Zscaler ZPA, or VPN)
 - No mTLS — relies on Cloud SQL's built-in SSL/TLS (server-side cert, not client cert)
 - No IAM-based DB authentication — standard password only
 
@@ -206,7 +211,7 @@ See [Direct Connect Setup](docs/option-c-direct-connect.md) for detailed steps.
 
 **Summary:**
 1. Customer creates a PostgreSQL user and grants schema-scoped permissions
-2. Customer adds Devin's static egress IPs to Cloud SQL Authorized Networks (or configures Zscaler)
+2. Customer adds Devin's static egress IPs to Cloud SQL Authorized Networks (or configures a private network path — IAP, Zscaler ZPA, VPN, etc.)
 3. Devin stores `DB_HOST`, `DB_USER`, `DB_PASSWORD`, `DB_NAME` as org-scoped secrets
 
 ---
@@ -217,8 +222,10 @@ See [Direct Connect Setup](docs/option-c-direct-connect.md) for detailed steps.
 
 | Path | When to Use | Setup |
 |---|---|---|
+| **Static IP Allowlist** | Simplest option; target has a public IP | Add [Devin's static egress IPs](https://docs.devin.ai/admin/common-issues#ip-whitelisting) to Cloud SQL Authorized Networks |
+| **IAP Tunneling** | Target is private; you prefer a cloud-native tunnel with no VPN | See [IAP Tunneling](../iap-tunneling/) — identity-aware TCP forwarding, free, no public IPs needed |
 | **Zscaler ZPA** | Organization already uses Zscaler for Devin traffic (e.g., GitHub Enterprise) | Add Cloud SQL proxy/instance as a ZPA Application Segment |
-| **Static IP Allowlist** | No existing Zscaler setup; direct internet path is acceptable | Add [Devin's static egress IPs](https://docs.devin.ai/admin/common-issues#ip-whitelisting) to Cloud SQL Authorized Networks |
+| **VPN** | Multiple private resources need full subnet routing | See [Cloud VPN](https://cloud.google.com/network-connectivity/docs/vpn) or [Devin VPN docs](https://docs.devin.ai/onboard-devin/vpn) |
 
 ### Database Permissions
 
@@ -318,10 +325,11 @@ This guide is GCP Cloud SQL-specific, but the architecture follows a **three-lay
 ┌─────────────────────────────────────────────────────────────────┐
 │  Layer 1: Network Path (cloud-agnostic)                        │
 │  How Devin's traffic reaches the database network               │
-│  ├─ Zscaler ZPA          (zero-trust, existing corp path)       │
-│  ├─ Static IP allowlist  (simplest, Devin egress IPs)           │
+│  ├─ Static IP allowlist  (simplest — public target, Devin IPs)  │
+│  ├─ Cloud tunnel         (SSM / Bastion / IAP — no VPN needed)  │
+│  ├─ Zscaler ZPA          (zero-trust proxy, if already in use)  │
 │  ├─ VPN                  (full subnet routing)                  │
-│  └─ Cloud tunnel         (SSM / Bastion / IAP)                  │
+│  └─ Private Service Connect (dedicated deployment only)          │
 ├─────────────────────────────────────────────────────────────────┤
 │  Layer 2: Transport / Proxy (provider-specific)                 │
 │  Optional proxy for mTLS, connection pooling, IAM auth          │
@@ -343,13 +351,13 @@ The three options documented here map to equivalent patterns on other clouds:
 
 | Pattern | GCP (this guide) | AWS Equivalent | Azure Equivalent |
 |---------|------------------|----------------|------------------|
-| **A: Customer-hosted proxy** | Cloud SQL Auth Proxy on GCE/Cloud Run, exposed via Zscaler | RDS Proxy or pgbouncer on EC2, exposed via Zscaler or PrivateLink | Azure SQL Private Endpoint, exposed via Zscaler or ExpressRoute |
+| **A: Customer-hosted proxy** | Cloud SQL Auth Proxy on GCE/Cloud Run, exposed via network path (ZPA, IAP, static IP, etc.) | RDS Proxy or pgbouncer on EC2, exposed via network path (ZPA, SSM, static IP, etc.) | Azure SQL Private Endpoint, exposed via ExpressRoute or network path |
 | **B: Cloud credential on Devin** | GCP SA key → Cloud SQL Auth Proxy in session | AWS IAM user access key → `aws rds generate-db-auth-token` | Azure AD service principal → token-based SQL auth |
 | **C: Direct connect** | PostgreSQL over TLS, Authorized Networks | PostgreSQL over TLS, Security Group allowlist | Azure SQL over TLS, firewall IP rules |
 
 ### What Stays the Same Across Providers
 
-- **Network path** — Zscaler ZPA and static IP allowlisting work identically regardless of whether the target is Cloud SQL, RDS, or Azure SQL
+- **Network path** — static IP allowlisting, cloud-native tunnels (SSM, IAP, Bastion), Zscaler ZPA, and VPN all work identically regardless of whether the target is Cloud SQL, RDS, or Azure SQL
 - **Devin Secrets** — credential storage and injection is provider-agnostic
 - **Blueprint structure** — `initialize` (install tooling), `maintenance` (start proxy/tunnel), `knowledge` (connection info)
 - **Database permissions model** — dedicated read/read-write role, no DDL, no superuser

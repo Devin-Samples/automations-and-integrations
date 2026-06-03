@@ -4,15 +4,15 @@
 
 ## Overview
 
-The customer deploys Cloud SQL Auth Proxy on their own GCP infrastructure (a GCE VM, Cloud Run service, or GKE pod) with the Google Service Account (GSA) attached natively as an instance service account — no key file is ever generated. Devin reaches the proxied PostgreSQL endpoint through the existing network path (typically Zscaler ZPA) and authenticates with a standard database user and password.
+The customer deploys Cloud SQL Auth Proxy on their own GCP infrastructure (a GCE VM, Cloud Run service, or GKE pod) with the Google Service Account (GSA) attached natively as an instance service account — no key file is ever generated. Devin reaches the proxied PostgreSQL endpoint through an appropriate network path and authenticates with a standard database user and password.
 
-This mirrors how human developers typically access the database: through a corporate zero-trust network to a database endpoint, authenticating with DB credentials, without holding GCP service account keys on their machines.
+This mirrors how human developers typically access the database: through a corporate network path to a database endpoint, authenticating with DB credentials, without holding GCP service account keys on their machines.
 
 ## Prerequisites
 
 - A GCP project with Cloud SQL PostgreSQL instance(s)
 - Cloud SQL Admin API enabled in the project
-- A network path from Devin to the customer's GCP environment (Zscaler ZPA recommended)
+- A network path from Devin to the customer's GCP environment (static IP allowlist, IAP tunneling, Zscaler ZPA, VPN, or Private Service Connect — see [Network Path Options](../README.md#network-path-options))
 - Devin org admin access to configure secrets
 
 ## Customer Setup (GCP Side)
@@ -65,13 +65,21 @@ Cloud SQL Auth Proxy is built into Cloud Run via [Cloud SQL connections](https:/
 
 ### 4. Configure Network Access
 
-**If using Zscaler ZPA:**
+**If using static IP allowlist (simplest):**
+- Open firewall rule for TCP/5432 from Devin's [static egress IPs](https://docs.devin.ai/admin/common-issues#ip-whitelisting) to the proxy VM
+- Requires the proxy VM to have an external IP or be behind a load balancer
+
+**If using IAP Tunneling (private, no VPN needed):**
+- See [IAP Tunneling](../../iap-tunneling/) — identity-aware TCP forwarding, free, no public IPs needed
+
+**If using Zscaler ZPA (if already deployed):**
 - Add the proxy VM's internal IP as a ZPA Application Segment
 - Protocol: TCP, Port: 5432
 - Assign access policy consistent with existing Devin application segments
 
-**If using direct access:**
-- Open firewall rule for TCP/5432 from Devin's [static egress IPs](https://docs.devin.ai/admin/common-issues#ip-whitelisting) to the proxy VM
+**If using VPN:**
+- Configure Cloud VPN or OpenVPN with routing to the proxy subnet
+- See [Devin VPN docs](https://docs.devin.ai/onboard-devin/vpn)
 
 ### 5. Create the Database Role
 
@@ -104,7 +112,7 @@ Add the following as **org-scoped** Devin Secrets (Settings > Secrets):
 
 | Secret Name | Value | Example |
 |---|---|---|
-| `DB_HOST` | Proxy VM hostname or IP (Zscaler-reachable) | `devin-db-proxy.internal.example.com` |
+| `DB_HOST` | Proxy VM hostname or IP (reachable via your chosen network path) | `devin-db-proxy.internal.example.com` |
 | `DB_USER` | PostgreSQL username | `devin_dev` |
 | `DB_PASSWORD` | PostgreSQL password | (secure password) |
 | `DB_NAME` | Database name | `dev_db` |
@@ -153,6 +161,6 @@ DROP TABLE app_schema.test_table;
 |---|---|
 | GCP credentials on Devin | **None** |
 | Key rotation required | **No** — no key exists |
-| Transport encryption | mTLS (Auth Proxy) + Zscaler |
+| Transport encryption | mTLS (Auth Proxy) + network path encryption (varies by option) |
 | Blast radius if Devin secret leaks | Scoped DB user/password only — no GCP IAM access |
-| Audit trail | Cloud SQL audit logs show `devin_dev` queries; Zscaler logs show network access |
+| Audit trail | Cloud SQL audit logs show `devin_dev` queries; network path logs (ZPA, IAP, VPN) show access |
