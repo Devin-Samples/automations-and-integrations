@@ -10,7 +10,7 @@ This is the fastest path to a working connection but provides fewer security lay
 
 ## Prerequisites
 
-- A Cloud SQL PostgreSQL instance with a **public IP** (or reachable via Zscaler ZPA)
+- A Cloud SQL PostgreSQL instance with a **public IP** (or reachable via a private network path such as IAP tunneling, Zscaler ZPA, or VPN)
 - SSL/TLS enforcement enabled on the Cloud SQL instance
 - Network path from Devin to the Cloud SQL endpoint
 - Devin org admin access to configure secrets
@@ -37,8 +37,10 @@ gcloud sql instances patch INSTANCE_NAME \
 
 Full IP list: https://docs.devin.ai/admin/common-issues#ip-whitelisting
 
-**Option B: Zscaler ZPA**
-- Add the Cloud SQL public IP as a ZPA Application Segment (TCP 5432)
+**Option B: Private network path (IAP, Zscaler ZPA, VPN, etc.)**
+- **IAP Tunneling:** See [IAP Tunneling](../../iap-tunneling/) — no public IP needed
+- **Zscaler ZPA:** Add the Cloud SQL public IP as a ZPA Application Segment (TCP 5432)
+- **VPN:** Configure Cloud VPN with routing to the Cloud SQL network — see [Devin VPN docs](https://docs.devin.ai/onboard-devin/vpn)
 
 ### 3. Create the Database Role
 
@@ -79,7 +81,7 @@ Add as **org-scoped** Devin Secrets (Settings > Secrets):
 
 | Secret Name | Value | Example |
 |---|---|---|
-| `DB_HOST` | Cloud SQL public IP or Zscaler-reachable hostname | `34.123.45.67` |
+| `DB_HOST` | Cloud SQL public IP or hostname reachable via your network path | `34.123.45.67` |
 | `DB_USER` | PostgreSQL username | `devin_dev` |
 | `DB_PASSWORD` | PostgreSQL password | (secure password) |
 | `DB_NAME` | Database name | `dev_db` |

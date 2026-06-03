@@ -10,7 +10,7 @@ This is the fastest path to a working connection but provides fewer security lay
 
 ## Prerequisites
 
-- An RDS PostgreSQL instance with **public accessibility** enabled (or reachable via Zscaler ZPA)
+- An RDS PostgreSQL instance with **public accessibility** enabled (or reachable via a private network path such as SSM port forwarding, Zscaler ZPA, or VPN)
 - TLS enforcement enabled on the RDS instance (default for RDS)
 - Network path from Devin to the RDS endpoint
 - Devin org admin access to configure secrets
@@ -32,7 +32,7 @@ aws rds modify-db-instance \
   --apply-immediately
 ```
 
-> **Note:** The RDS instance must be in a subnet with an Internet Gateway route for public accessibility to work. Alternatively, route traffic through Zscaler ZPA to avoid exposing the instance publicly.
+> **Note:** The RDS instance must be in a subnet with an Internet Gateway route for public accessibility to work. Alternatively, route traffic through a private network path (SSM port forwarding, Zscaler ZPA, VPN, etc.) to avoid exposing the instance publicly.
 
 ### 2. Configure Security Group
 
@@ -56,8 +56,10 @@ aws ec2 authorize-security-group-ingress \
 
 Full IP list: https://docs.devin.ai/admin/common-issues#ip-whitelisting
 
-**Option B: Zscaler ZPA**
-- Add the RDS instance endpoint as a ZPA Application Segment (TCP 5432)
+**Option B: Private network path (SSM, Zscaler ZPA, VPN, etc.)**
+- **SSM Port Forwarding:** See [SSM Port Forwarding](../../ssm-port-forwarding/) — no public IP needed
+- **Zscaler ZPA:** Add the RDS instance endpoint as a ZPA Application Segment (TCP 5432)
+- **VPN:** Configure routing to the RDS subnet — see [Client VPN](../../client-vpn/)
 
 ### 3. Create the Database Role
 

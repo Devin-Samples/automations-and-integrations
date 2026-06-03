@@ -4,7 +4,7 @@
 # No proxy, no AWS credentials. Just a connection string.
 #
 # Required Devin Secrets (org-scoped):
-#   DB_HOST       - RDS instance endpoint or Zscaler-reachable hostname
+#   DB_HOST       - RDS instance endpoint (public, or reachable via your network path)
 #   DB_USER       - PostgreSQL username (e.g., devin_dev)
 #   DB_PASSWORD   - PostgreSQL password
 #   DB_NAME       - Database name

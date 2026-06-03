@@ -12,7 +12,7 @@ The Auth Proxy handles mTLS encryption and (optionally) IAM-based database authe
 
 - A GCP project with Cloud SQL PostgreSQL instance(s)
 - Cloud SQL Admin API enabled in the project
-- Network path from Devin to Google APIs (internet access); for private-IP-only instances, Zscaler ZPA or IAP tunnel into the VPC
+- Network path from Devin to Google APIs (internet access); for private-IP-only instances, use IAP tunneling, Zscaler ZPA, VPN, or Private Service Connect (see [Network Path Options](../README.md#network-path-options))
 - Devin org admin access to configure secrets and environment blueprints
 
 ## Customer Setup (GCP Side)
@@ -79,7 +79,7 @@ CREATE USER devin_dev WITH PASSWORD 'SECURE_PASSWORD';
 The Cloud SQL Auth Proxy connects through Google's secure infrastructure — it **does not** use Authorized Networks or direct TCP connections to the instance IP. This means:
 
 - **Public IP instance:** No additional network configuration needed. The proxy handles connectivity through Google's API.
-- **Private IP instance:** Devin must have a network path into the VPC. Use **Zscaler ZPA** to route traffic to the VPC, or pair with [IAP Tunneling](../../iap-tunneling/) to reach a bastion that has VPC access.
+- **Private IP instance:** Devin must have a network path into the VPC. Use [IAP Tunneling](../../iap-tunneling/) for a cloud-native tunnel (free, no public IPs), or route through Zscaler ZPA, VPN, or Private Service Connect.
 
 ## Devin Setup
 

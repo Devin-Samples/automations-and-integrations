@@ -1,6 +1,8 @@
 # AWS RDS Connectivity
 
-Connect Devin to AWS RDS PostgreSQL databases — customer-hosted proxy, IAM credentials, and direct connect options with Zscaler ZPA integration.
+Connect Devin to AWS RDS PostgreSQL databases — customer-hosted proxy, IAM credentials, and direct connect options.
+
+> **Network path is only required when there is no public route to the target resource.** If RDS is publicly accessible and you allowlist Devin's static egress IPs, no proxy or tunnel is needed. When private networking is required, several options exist: cloud-native tunnels like [SSM Port Forwarding](../ssm-port-forwarding/), zero-trust proxies such as Zscaler ZPA, VPN, or PrivateLink. Choose the option that fits your existing infrastructure.
 
 > **This guide is AWS-specific, but the architecture follows a provider-agnostic three-layer model** (network path → transport/proxy → identity/auth) that applies equally to GCP Cloud SQL, Azure SQL, and other cloud-hosted databases. See [Generalizing to Other Cloud Providers](#generalizing-to-other-cloud-providers) for cross-cloud mapping.
 
@@ -19,9 +21,12 @@ Connect Devin to AWS RDS PostgreSQL databases — customer-hosted proxy, IAM cre
 │                          │ TCP 5432                                   │
 │                          ▼                                           │
 │             ┌────────────────────────┐                               │
-│             │  Network Path          │                               │
+│             │  Network Path (if no   │                               │
+│             │  public route exists)  │                               │
+│             │  ├─ Static IP Allowlist│                               │
+│             │  ├─ SSM Port Forwarding│                               │
 │             │  ├─ Zscaler ZPA        │                               │
-│             │  └─ Static IP Allowlist│                               │
+│             │  └─ VPN / PrivateLink  │                               │
 │             └────────────┬───────────┘                               │
 └──────────────────────────┼───────────────────────────────────────────┘
                            │
@@ -54,15 +59,15 @@ Connect Devin to AWS RDS PostgreSQL databases — customer-hosted proxy, IAM cre
 
 **Recommended for production.** All AWS identity stays on the customer side. Devin holds only a scoped database password — no AWS access key ever leaves the customer's infrastructure.
 
-This mirrors how human developers typically connect: through a corporate network (e.g., Zscaler ZPA) to a database endpoint, authenticating with a DB user, without holding IAM credentials on their laptops.
+This mirrors how human developers typically connect: through a corporate network path (e.g., a zero-trust proxy like Zscaler ZPA, a VPN, or a cloud-native tunnel like SSM) to a database endpoint, authenticating with a DB user, without holding IAM credentials on their laptops.
 
 ```
 ┌──────────────────────────────────────────────────────────────────────┐
 │                       Devin Session (microVM)                        │
 │                                                                      │
 │  App Under Dev ──┐                                                  │
-│                  ├── TCP 5432 ──► Zscaler ZPA ──┐                   │
-│  MCP PostgreSQL ─┘                              │                   │
+│                  ├── TCP 5432 ──► Network Path ─┐                   │
+│  MCP PostgreSQL ─┘     (ZPA / SSM / VPN / etc.) │                   │
 │                                                  │                   │
 │  Devin Secrets:                                  │                   │
 │    DB_HOST · DB_USER · DB_PASSWORD · DB_NAME     │                   │
@@ -93,7 +98,7 @@ This mirrors how human developers typically connect: through a corporate network
 - **No AWS credentials on Devin** — eliminates key rotation, leakage risk, and credential management
 - **RDS can remain in private subnets** — no public accessibility required
 - **Devin blueprint is minimal** — no AWS CLI, no proxy binary needed
-- **Extends existing network patterns** — if Zscaler ZPA already routes Devin traffic (e.g., for GitHub Enterprise), adding RDS Proxy is an incremental ZPA config change
+- **Extends existing network patterns** — if you already use a proxy or tunnel for Devin traffic (e.g., Zscaler ZPA for GitHub Enterprise, or SSM for other VPC resources), adding RDS Proxy is an incremental configuration change on whichever path you already have
 
 ### Setup
 
@@ -101,7 +106,7 @@ See [Customer-Hosted Proxy Setup](docs/option-a-customer-hosted-proxy.md) for de
 
 **Summary:**
 1. Customer deploys RDS Proxy (managed) or pgbouncer on EC2 with an IAM role attached
-2. Proxy endpoint exposed to Devin via Zscaler ZPA
+2. Proxy endpoint exposed to Devin via an existing network path (Zscaler ZPA, SSM tunnel, static IP allowlist, etc.)
 3. Devin stores `DB_HOST`, `DB_USER`, `DB_PASSWORD`, `DB_NAME` as org-scoped secrets
 
 ---
@@ -125,7 +130,7 @@ See [Customer-Hosted Proxy Setup](docs/option-a-customer-hosted-proxy.md) for de
 │    AWS_ACCESS_KEY_ID · AWS_SECRET_ACCESS_KEY                        │
 │    DB_HOST · DB_NAME · DB_USER                                      │
 └──────────────────────────┼───────────────────────────────────────────┘
-                           │ TLS (via Zscaler or static IP)
+                           │ TLS (via network path — see options below)
                            ▼
               ┌────────────────────────────────────────────────────────┐
               │  Customer AWS Account                                  │
@@ -172,8 +177,8 @@ See [IAM Credentials Setup](docs/option-b-iam-credentials-on-devin.md) for detai
 │                       Devin Session (microVM)                        │
 │                                                                      │
 │  App Under Dev ──┐                                                  │
-│                  ├── TCP 5432 ──► Zscaler ZPA / Static IP ──┐      │
-│  MCP PostgreSQL ─┘                                           │      │
+│                  ├── TCP 5432 ──► Network Path ─────────────┐      │
+│  MCP PostgreSQL ─┘   (static IP / SSM / ZPA / VPN)          │      │
 │                                                              │      │
 │  Devin Secrets:                                              │      │
 │    DB_HOST · DB_USER · DB_PASSWORD · DB_NAME                 │      │
@@ -196,7 +201,7 @@ See [IAM Credentials Setup](docs/option-b-iam-credentials-on-devin.md) for detai
 
 ### Trade-offs
 
-- RDS must be **publicly accessible** (unless routed through Zscaler ZPA)
+- RDS must be **publicly accessible** (unless routed through a private network path such as SSM port forwarding, Zscaler ZPA, or VPN)
 - No IAM-based DB authentication — standard password only
 - Security Group must allowlist Devin's static egress IPs
 
@@ -206,7 +211,7 @@ See [Direct Connect Setup](docs/option-c-direct-connect.md) for detailed steps.
 
 **Summary:**
 1. Customer creates a PostgreSQL user and grants schema-scoped permissions
-2. Customer enables public accessibility on RDS and adds Devin's static egress IPs to the Security Group (or configures Zscaler)
+2. Customer enables public accessibility on RDS and adds Devin's static egress IPs to the Security Group (or configures a private network path — SSM, Zscaler ZPA, VPN, etc.)
 3. Devin stores `DB_HOST`, `DB_USER`, `DB_PASSWORD`, `DB_NAME` as org-scoped secrets
 
 ---
@@ -217,8 +222,10 @@ See [Direct Connect Setup](docs/option-c-direct-connect.md) for detailed steps.
 
 | Path | When to Use | Setup |
 |---|---|---|
+| **Static IP Allowlist** | Simplest option; target is publicly accessible | Add [Devin's static egress IPs](https://docs.devin.ai/admin/common-issues#ip-whitelisting) to the RDS Security Group |
+| **SSM Port Forwarding** | Target is private; you prefer a cloud-native tunnel with no VPN | See [SSM Port Forwarding](../ssm-port-forwarding/) — encrypted tunnel via Systems Manager, no public IPs needed |
 | **Zscaler ZPA** | Organization already uses Zscaler for Devin traffic (e.g., for GitHub Enterprise) | Add RDS Proxy endpoint or RDS instance as a ZPA Application Segment |
-| **Static IP Allowlist** | No existing Zscaler setup; direct internet path is acceptable | Add [Devin's static egress IPs](https://docs.devin.ai/admin/common-issues#ip-whitelisting) to the RDS Security Group |
+| **VPN** | Multiple private resources need full subnet routing | See [Client VPN](../client-vpn/) or [Devin VPN docs](https://docs.devin.ai/onboard-devin/vpn) |
 
 ### Database Permissions
 
@@ -321,10 +328,11 @@ This guide is AWS RDS-specific, but the architecture follows a **three-layer mod
 ┌─────────────────────────────────────────────────────────────────┐
 │  Layer 1: Network Path (cloud-agnostic)                        │
 │  How Devin's traffic reaches the database network               │
-│  ├─ Zscaler ZPA          (zero-trust, existing corp path)       │
-│  ├─ Static IP allowlist  (simplest, Devin egress IPs)           │
+│  ├─ Static IP allowlist  (simplest — public target, Devin IPs)  │
+│  ├─ Cloud tunnel         (SSM / Bastion / IAP — no VPN needed)  │
+│  ├─ Zscaler ZPA          (zero-trust proxy, if already in use)  │
 │  ├─ VPN                  (full subnet routing)                  │
-│  └─ Cloud tunnel         (SSM / Bastion / IAP)                  │
+│  └─ PrivateLink          (dedicated deployment only)            │
 ├─────────────────────────────────────────────────────────────────┤
 │  Layer 2: Transport / Proxy (provider-specific)                 │
 │  Optional proxy for mTLS, connection pooling, IAM auth          │
@@ -346,13 +354,13 @@ The three options documented here map to equivalent patterns on other clouds:
 
 | Pattern | AWS (this guide) | GCP Equivalent | Azure Equivalent |
 |---------|------------------|----------------|------------------|
-| **A: Customer-hosted proxy** | RDS Proxy or pgbouncer on EC2, exposed via Zscaler | Cloud SQL Auth Proxy on GCE/Cloud Run, exposed via Zscaler | Azure SQL Private Endpoint, exposed via Zscaler or ExpressRoute |
+| **A: Customer-hosted proxy** | RDS Proxy or pgbouncer on EC2, exposed via network path (ZPA, SSM, static IP, etc.) | Cloud SQL Auth Proxy on GCE/Cloud Run, exposed via network path (ZPA, IAP, static IP, etc.) | Azure SQL Private Endpoint, exposed via ExpressRoute or network path |
 | **B: Cloud credential on Devin** | AWS IAM user access key → `aws rds generate-db-auth-token` | GCP SA key → Cloud SQL Auth Proxy in session | Azure AD service principal → token-based SQL auth |
 | **C: Direct connect** | PostgreSQL over TLS, Security Group allowlist | PostgreSQL over TLS, Authorized Networks | Azure SQL over TLS, firewall IP rules |
 
 ### What Stays the Same Across Providers
 
-- **Network path** — Zscaler ZPA and static IP allowlisting work identically regardless of whether the target is RDS, Cloud SQL, or Azure SQL
+- **Network path** — static IP allowlisting, cloud-native tunnels (SSM, IAP, Bastion), Zscaler ZPA, and VPN all work identically regardless of whether the target is RDS, Cloud SQL, or Azure SQL
 - **Devin Secrets** — credential storage and injection is provider-agnostic
 - **Blueprint structure** — `initialize` (install tooling), `maintenance` (start proxy/tunnel), `knowledge` (connection info)
 - **Database permissions model** — dedicated read/read-write role, no DDL, no superuser

@@ -8,7 +8,7 @@ Patterns for connecting Devin to private resources in Google Cloud VPCs.
 |---|---|---|---|
 | **IAP Tunneling** | [`iap-tunneling/`](iap-tunneling/) | Identity-Aware Proxy TCP forwarding — no public IPs, IAM-based access, free | Available |
 | **Private Service Connect** | [`private-service-connect/`](private-service-connect/) | Private IP for Google APIs, managed services, and your own published services | Available |
-| **Cloud SQL** | [`cloud-sql/`](cloud-sql/) | Connect to Cloud SQL PostgreSQL — customer-hosted proxy, SA key, or direct connect with Zscaler ZPA | Available |
+| **Cloud SQL** | [`cloud-sql/`](cloud-sql/) | Connect to Cloud SQL PostgreSQL — customer-hosted proxy, SA key, or direct connect (multiple network path options) | Available |
 
 ## Which Pattern?
 
