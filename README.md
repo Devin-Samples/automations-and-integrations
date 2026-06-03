@@ -32,7 +32,8 @@ automations-and-integrations/
 │   ├── aws/                           #   AWS connectivity patterns
 │   │   ├── ssm-port-forwarding/       #     SSM tunnel to private VPC resources (available)
 │   │   ├── client-vpn/                #     Full subnet VPN access (planned)
-│   │   └── privatelink/               #     Service-to-service connectivity (planned)
+│   │   ├── privatelink/               #     Service-to-service connectivity (planned)
+│   │   └── rds/                       #     RDS PostgreSQL connectivity (available)
 │   ├── azure/                         #   Azure connectivity patterns
 │   │   ├── bastion-tunneling/         #     Azure Bastion native tunneling (planned)
 │   │   ├── private-endpoints/         #     Private IP for PaaS services (planned)

@@ -1,0 +1,46 @@
+# Devin Environment Blueprint: AWS RDS via IAM Credentials + IAM DB Auth
+#
+# Architecture: Option B — IAM user access key stored as Devin secret,
+# AWS CLI generates short-lived IAM DB auth tokens inside the Devin session.
+#
+# Required Devin Secrets (org-scoped):
+#   DEVIN_AWS_ACCESS_KEY_ID       - IAM user access key ID
+#   DEVIN_AWS_SECRET_ACCESS_KEY   - IAM user secret access key
+#   AWS_DEFAULT_REGION            - AWS region (e.g., us-east-1)
+#   RDS_ENDPOINT                  - RDS instance endpoint
+#   RDS_PORT                      - RDS port (e.g., 5432)
+#   DB_NAME                       - Database name
+#   DB_USER                       - PostgreSQL username (e.g., devin_iam for IAM auth,
+#                                   or devin_dev for password auth)
+#   DB_PASSWORD                   - (Optional, only if using password auth)
+#
+# See: docs/option-b-iam-credentials-on-devin.md
+
+initialize: |
+  # Install AWS CLI v2 (persists in snapshot)
+  curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o /tmp/awscliv2.zip
+  unzip -qo /tmp/awscliv2.zip -d /tmp/aws-install
+  /tmp/aws-install/aws/install --update
+  rm -rf /tmp/awscliv2.zip /tmp/aws-install
+
+maintenance: |
+  # Write AWS credentials to tmpfs (RAM-backed, never written to disk or captured in snapshots).
+  # Note: Devin strips secret *env vars* before snapshot save, but files written to
+  # /tmp or other disk paths would persist. /dev/shm is always tmpfs on Linux.
+  mkdir -p /dev/shm/.aws
+  printf '%s\n' "[default]" \
+    "aws_access_key_id = $DEVIN_AWS_ACCESS_KEY_ID" \
+    "aws_secret_access_key = $DEVIN_AWS_SECRET_ACCESS_KEY" \
+    "region = $AWS_DEFAULT_REGION" > /dev/shm/.aws/credentials
+  chmod 600 /dev/shm/.aws/credentials
+  export AWS_SHARED_CREDENTIALS_FILE=/dev/shm/.aws/credentials
+
+knowledge:
+  - name: database
+    contents: |
+      RDS PostgreSQL dev database is available at $RDS_ENDPOINT:$RDS_PORT.
+      IAM DB auth — generate a fresh token (valid 15 min):
+        export PGPASSWORD=$(aws rds generate-db-auth-token --hostname $RDS_ENDPOINT --port $RDS_PORT --username $DB_USER --region $AWS_DEFAULT_REGION)
+        psql "host=$RDS_ENDPOINT port=$RDS_PORT user=$DB_USER dbname=$DB_NAME sslmode=require"
+      Password auth:
+        psql "postgresql://$DB_USER:$DB_PASSWORD@$RDS_ENDPOINT:$RDS_PORT/$DB_NAME?sslmode=require"
