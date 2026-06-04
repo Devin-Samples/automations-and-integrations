@@ -15,6 +15,7 @@ Patterns and deployable infrastructure for connecting Devin to private resources
 | **[IAP Tunneling](gcp/iap-tunneling/)** | GCP | Low | Free (IAP) | Quick access to GCP VMs; identity-aware TCP forwarding |
 | **[Private Service Connect](gcp/private-service-connect/)** | GCP | Low | ~$0.01/hr + data | Google-managed services over private IP |
 | **[Cloud SQL](gcp/cloud-sql/)** | GCP | Low–Med | Varies by option | Cloud SQL PostgreSQL — customer-hosted proxy, SA key, or direct connect |
+| **[Azure SQL](azure/sql/)** | Azure | Low–Med | Varies by option | Azure SQL Database — private endpoint, service principal, or direct connect |
 | **[RDS](aws/rds/)** | AWS | Low–Med | Varies by option | RDS PostgreSQL — customer-hosted proxy, IAM credentials, or direct connect |
 | **[Database Access](database-access/)** | Any | Varies | Depends on tunnel | MCP or CLI database connectivity — credential setup, rotation, auth providers |
 
@@ -61,7 +62,8 @@ network-connectivity/
 ├── azure/
 │   ├── bastion-tunneling/             # ✓ Available — Bastion native tunneling to Azure VMs
 │   ├── private-endpoints/             # ✓ Available — Private IP for Azure PaaS services
-│   └── vpn-gateway/                   # ✓ Available — P2S/S2S VPN for full subnet routing
+│   ├── vpn-gateway/                   # ✓ Available — P2S/S2S VPN for full subnet routing
+│   └── sql/                           # ✓ Available — Azure SQL Database connectivity
 └── gcp/
     ├── iap-tunneling/                 # ✓ Available — IAP TCP forwarding to GCP VMs
     ├── private-service-connect/       # ✓ Available — Private IP for Google APIs and services
@@ -91,6 +93,7 @@ Connecting Devin to a cloud-hosted database (Cloud SQL, RDS, Azure SQL, etc.) fo
 **Available provider-specific guides:**
 - **AWS** → [RDS Connectivity](aws/rds/) — three architecture options (proxy, IAM credentials, direct connect) with detailed setup and example blueprints
 - **GCP** → [Cloud SQL Connectivity](gcp/cloud-sql/) — three architecture options with detailed setup, cross-cloud mapping table, and example blueprints
+- **Azure** → [Azure SQL Connectivity](azure/sql/) — three architecture options (private endpoint, service principal, direct connect) with example blueprints
 
 For provider-agnostic database access (MCP server setup, CLI configuration, credential management), see the dedicated [Database Access](database-access/) guide. It covers:
 - MCP vs. CLI access models and when to use each
