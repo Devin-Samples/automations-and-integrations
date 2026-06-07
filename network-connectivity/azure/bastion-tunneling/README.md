@@ -269,7 +269,9 @@ az network bastion tunnel \
   --port 8081 &
 ```
 
-## Cost
+## Cost (Estimates)
+
+> Costs below are approximate estimates based on published cloud provider pricing at time of writing. Verify current pricing on the provider's pricing page before budgeting.
 
 | Resource | Approximate Cost |
 |---|---|
