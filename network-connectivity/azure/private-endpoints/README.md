@@ -191,7 +191,9 @@ For database access specifically, see the [Database Access guide](../../database
    ```
 3. Enable the SQL Server MCP in Settings > MCP Marketplace
 
-## Cost
+## Cost (Estimates)
+
+> Costs below are approximate estimates based on published cloud provider pricing at time of writing. Verify current pricing on the provider's pricing page before budgeting.
 
 | Resource | Approximate Cost |
 |---|---|

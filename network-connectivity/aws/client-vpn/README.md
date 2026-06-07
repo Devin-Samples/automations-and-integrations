@@ -219,7 +219,9 @@ ping -c 1 10.0.1.x || echo "VPN tunnel may not be ready yet"
 
 See also [Devin VPN Configuration](https://docs.devin.ai/onboard-devin/vpn) for Devin's built-in VPN support, which may simplify this setup.
 
-## Cost
+## Cost (Estimates)
+
+> Costs below are approximate estimates based on published cloud provider pricing at time of writing. Verify current pricing on the provider's pricing page before budgeting.
 
 | Resource | Approximate Cost |
 |---|---|

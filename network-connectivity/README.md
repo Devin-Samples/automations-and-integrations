@@ -4,7 +4,7 @@ Patterns and deployable infrastructure for connecting Devin to private resources
 
 ## Which Pattern Should I Use?
 
-| Pattern | Cloud | Complexity | Cost | Best For |
+| Pattern | Cloud | Complexity | Est. Cost * | Best For |
 |---|---|---|---|---|
 | **[SSM Port Forwarding](aws/ssm-port-forwarding/)** | AWS | Low | ~$0.06/hr (VPC endpoints) | Quick access to a single private endpoint; no VPN client needed |
 | **[Client VPN](aws/client-vpn/)** | AWS | Medium | ~$0.15/hr + $0.05/conn | Multiple private resources; full subnet-level routing |
@@ -18,6 +18,8 @@ Patterns and deployable infrastructure for connecting Devin to private resources
 | **[Azure SQL](azure/sql/)** | Azure | Low–Med | Varies by option | Azure SQL Database — private endpoint, service principal, or direct connect |
 | **[RDS](aws/rds/)** | AWS | Low–Med | Varies by option | RDS PostgreSQL — customer-hosted proxy, IAM credentials, or direct connect |
 | **[Database Access](database-access/)** | Any | Varies | Depends on tunnel | MCP or CLI database connectivity — credential setup, rotation, auth providers |
+
+\* *Cost estimates are approximate and based on published cloud provider pricing at time of writing. Actual costs vary by region, usage volume, and provider pricing changes. Always verify current pricing on the respective cloud provider's pricing page before budgeting.*
 
 ### Decision Guide
 

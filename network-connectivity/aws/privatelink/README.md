@@ -219,7 +219,9 @@ PrivateLink endpoints require Devin to be **inside the VPC** to use the private 
 
 For Devin **Dedicated Deployment** customers, PrivateLink can connect Devin's managed VPC directly to your services — see [Dedicated Deployment Private Networking](https://docs.devin.ai/enterprise/deployment/dedicated_saas_private_networking).
 
-## Cost
+## Cost (Estimates)
+
+> Costs below are approximate estimates based on published cloud provider pricing at time of writing. Verify current pricing on the provider's pricing page before budgeting.
 
 | Resource | Approximate Cost |
 |---|---|
