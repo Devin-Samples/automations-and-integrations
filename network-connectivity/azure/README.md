@@ -10,12 +10,14 @@ Patterns for connecting Devin to private resources in Azure VNets.
 | **Private Endpoints** | [`private-endpoints/`](private-endpoints/) | Private IP connectivity to Azure PaaS services (Key Vault, Storage, SQL, Cosmos DB) | Available |
 | **VPN Gateway** | [`vpn-gateway/`](vpn-gateway/) | Point-to-site or site-to-site VPN for full subnet routing via OpenVPN | Available |
 | **Azure SQL** | [`sql/`](sql/) | Azure SQL Database connectivity — private endpoint, service principal, or direct connect | Available |
+| **Azure PostgreSQL** | [`cloud-sql/`](cloud-sql/) | Azure Database for PostgreSQL Flexible Server — private endpoint, service principal, or direct connect | Available |
 
 ## Which Pattern?
 
 - **Single VM** → [Bastion Tunneling](bastion-tunneling/) — simplest, identity-aware, no VM public IP
 - **Azure PaaS service (SQL, Storage, Key Vault)** → [Private Endpoints](private-endpoints/) — private IP for managed services
 - **Azure SQL Database** → [Azure SQL](sql/) — three architecture options with detailed setup and example blueprints
+- **Azure PostgreSQL** → [Azure PostgreSQL](cloud-sql/) — three architecture options for Flexible Server with detailed setup and example blueprints
 - **Multiple services across a VNet** → [VPN Gateway (P2S)](vpn-gateway/) — full subnet routing
 
 ## Combining Patterns
@@ -30,3 +32,4 @@ Private Endpoints provide the network path to PaaS services but require Devin to
 - [Azure Private Endpoints](https://learn.microsoft.com/en-us/azure/private-link/private-endpoint-overview)
 - [Azure VPN Gateway](https://learn.microsoft.com/en-us/azure/vpn-gateway/vpn-gateway-about-vpngateways)
 - [Azure SQL Database](https://learn.microsoft.com/en-us/azure/azure-sql/database/)
+- [Azure Database for PostgreSQL Flexible Server](https://learn.microsoft.com/en-us/azure/postgresql/flexible-server/overview)

@@ -38,7 +38,8 @@ automations-and-integrations/
 │   │   ├── bastion-tunneling/         #     Azure Bastion native tunneling (planned)
 │   │   ├── private-endpoints/         #     Private IP for PaaS services (planned)
 │   │   ├── vpn-gateway/               #     Point-to-site / site-to-site VPN (planned)
-│   │   └── sql/                       #     Azure SQL Database connectivity (available)
+│   │   ├── sql/                       #     Azure SQL Database connectivity (available)
+│   │   └── cloud-sql/                 #     Azure PostgreSQL Flexible Server connectivity (available)
 │   └── gcp/                           #   GCP connectivity patterns
 │       ├── iap-tunneling/             #     IAP TCP forwarding (available)
 │       ├── private-service-connect/   #     Private IP for Google APIs (available)
