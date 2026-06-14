@@ -1,0 +1,43 @@
+# Devin Environment Blueprint: Azure PostgreSQL via Service Principal + Entra ID Token Auth
+#
+# Architecture: Option B -- Service principal credentials stored as Devin secrets,
+# Entra ID token acquired at session start for token-based PostgreSQL authentication.
+#
+# Required Devin Secrets (org-scoped):
+#   AZURE_TENANT_ID      - Entra ID tenant ID (GUID)
+#   AZURE_CLIENT_ID      - Service principal app ID (GUID)
+#   AZURE_CLIENT_SECRET  - Service principal client secret
+#   PG_HOST              - Flexible Server hostname (server.postgres.database.azure.com)
+#   DB_NAME              - Database name
+#
+# See: docs/option-b-service-principal-on-devin.md
+
+initialize: |
+  # Install Azure CLI (persists in snapshot)
+  curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
+
+maintenance: |
+  # Log in as service principal
+  az login --service-principal \
+    --username "$AZURE_CLIENT_ID" \
+    --password "$AZURE_CLIENT_SECRET" \
+    --tenant "$AZURE_TENANT_ID" \
+    --output none
+
+  # Acquire Entra ID token for Azure PostgreSQL and write to tmpfs.
+  # /dev/shm is always tmpfs on Linux -- never written to disk or captured
+  # in snapshots. Devin strips secret env vars before snapshot save, but
+  # files written to disk-backed paths would persist.
+  az account get-access-token \
+    --resource-type oss-rdbms \
+    --query accessToken -o tsv > /dev/shm/azure-pg-token
+  chmod 600 /dev/shm/azure-pg-token
+
+knowledge:
+  - name: database
+    contents: |
+      Azure PostgreSQL dev database is available at $PG_HOST:5432 via Entra ID token auth.
+      Entra ID token location: /dev/shm/azure-pg-token
+      Connect with psql: PGPASSWORD=$(cat /dev/shm/azure-pg-token) psql -h $PG_HOST -p 5432 -U devin-db-sp -d $DB_NAME
+      Token expires in ~1 hour. Refresh: az account get-access-token --resource-type oss-rdbms --query accessToken -o tsv
+      For password auth fallback (if configured): psql "postgresql://devin_dev:$DB_PASSWORD@$PG_HOST:5432/$DB_NAME?sslmode=require"
