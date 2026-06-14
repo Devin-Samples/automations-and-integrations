@@ -40,4 +40,4 @@ knowledge:
       Entra ID token location: /dev/shm/azure-pg-token
       Connect with psql: PGPASSWORD=$(cat /dev/shm/azure-pg-token) psql -h $PG_HOST -p 5432 -U devin-db-sp -d $DB_NAME
       Token expires in ~1 hour. Refresh: az account get-access-token --resource-type oss-rdbms --query accessToken -o tsv
-      For password auth fallback (if configured): psql "postgresql://devin_dev:$DB_PASSWORD@$PG_HOST:5432/$DB_NAME?sslmode=require"
+      For password auth fallback, see Option C (direct connect) instead.

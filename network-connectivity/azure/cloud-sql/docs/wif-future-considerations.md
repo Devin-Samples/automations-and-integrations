@@ -98,7 +98,7 @@ However, this is architecturally harder given the Firecracker isolation model.
 ## Cross-Cloud Applicability
 
 The same OIDC identity would also enable:
-- **GCP Workload Identity Federation** -- authenticate to GCP as a federated workload identity (see [GCP WIF analysis](../../gcp/cloud-sql/docs/wif-future-considerations.md))
+- **GCP Workload Identity Federation** -- authenticate to GCP as a federated workload identity (see [GCP WIF analysis](../../../gcp/cloud-sql/docs/wif-future-considerations.md))
 - **AWS `AssumeRoleWithWebIdentity`** -- federate into AWS IAM roles
 - **HashiCorp Vault** -- authenticate via OIDC auth method
 - **Any OIDC Relying Party** -- customer-operated proxies can verify Devin session identity at the network edge
