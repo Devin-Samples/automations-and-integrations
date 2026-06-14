@@ -55,7 +55,7 @@ Connect Devin to Azure Database for PostgreSQL Flexible Server — customer-host
 
 ## Option A: Customer-Hosted Private Endpoint
 
-**Recommended for production.** All Azure identity stays on the customer side. Devin holds only a scoped database password -- no Azure credentials on Devin.
+**Production ready** All Azure identity stays on the customer side. Devin holds only a scoped database password -- no Azure credentials on Devin.
 
 This mirrors how human developers typically connect: through a corporate network (e.g., Zscaler ZPA or VPN Gateway) to a database endpoint, authenticating with a DB user, without holding Azure service principal secrets on their laptops.
 
@@ -111,7 +111,7 @@ See [Customer-Hosted Private Endpoint Setup](docs/option-a-customer-hosted-endpo
 
 ## Option B: Service Principal on Devin
 
-**Recommended for POC.** Fastest to stand up with Azure AD (Entra ID) authentication. Customer creates an Entra ID service principal, stores its client ID and secret as Devin secrets, and Devin acquires an Entra ID access token at session start for token-based PostgreSQL authentication.
+**Recommended to start with.** Fastest to stand up with Azure AD (Entra ID) authentication. Customer creates an Entra ID service principal, stores its client ID and secret as Devin secrets, and Devin acquires an Entra ID access token at session start for token-based PostgreSQL authentication.
 
 ```
 +----------------------------------------------------------------------+
