@@ -1,6 +1,6 @@
 # Devin Environment Blueprint: Azure PostgreSQL via Service Principal + Entra ID Token Auth
 #
-# Architecture: Option B -- Service principal credentials stored as Devin secrets,
+# Architecture: Option B1 -- Service principal credentials stored as Devin secrets,
 # Entra ID token acquired at session start for token-based PostgreSQL authentication.
 #
 # Required Devin Secrets (org-scoped):
@@ -10,7 +10,7 @@
 #   PG_HOST              - Flexible Server hostname (server.postgres.database.azure.com)
 #   DB_NAME              - Database name
 #
-# See: docs/option-b-service-principal-on-devin.md
+# See: docs/option-b1-service-principal-postgresql.md
 
 initialize: |
   # Install Azure CLI (persists in snapshot)
@@ -40,4 +40,4 @@ knowledge:
       Entra ID token location: /dev/shm/azure-pg-token
       Connect with psql: PGPASSWORD=$(cat /dev/shm/azure-pg-token) psql -h $PG_HOST -p 5432 -U devin-db-sp -d $DB_NAME
       Token expires in ~1 hour. Refresh: az account get-access-token --resource-type oss-rdbms --query accessToken -o tsv
-      For password auth fallback, see Option C (direct connect) instead.
+      For password auth fallback, see Option A2 (direct connect) instead.

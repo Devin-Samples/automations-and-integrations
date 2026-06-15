@@ -1,4 +1,4 @@
-# Option A: Customer-Hosted Private Endpoint
+# Option C2: Customer-Hosted Private Endpoint — Azure Database for PostgreSQL
 
 > Keep all Azure identity on the customer side. Devin holds only a scoped database password.
 
@@ -65,7 +65,6 @@ az network private-endpoint dns-zone-group create \
 ### 3. Disable Public Access (Recommended)
 
 ```bash
-# Disable public network access -- all traffic flows through private endpoint
 az postgres flexible-server update \
   --resource-group RESOURCE_GROUP \
   --name PG_SERVER_NAME \
@@ -86,19 +85,15 @@ az postgres flexible-server update \
 ### 5. Create the Database Role
 
 ```sql
--- Create a dedicated user for Devin
 CREATE USER devin_dev WITH PASSWORD 'SECURE_PASSWORD';
 
--- Grant schema-scoped permissions
 GRANT CONNECT ON DATABASE dev_db TO devin_dev;
 
--- Read-only on shared schemas
 GRANT USAGE ON SCHEMA shared_schema TO devin_dev;
 GRANT SELECT ON ALL TABLES IN SCHEMA shared_schema TO devin_dev;
 ALTER DEFAULT PRIVILEGES IN SCHEMA shared_schema
   GRANT SELECT ON TABLES TO devin_dev;
 
--- Read-write on application schema
 GRANT USAGE ON SCHEMA app_schema TO devin_dev;
 GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA app_schema TO devin_dev;
 ALTER DEFAULT PRIVILEGES IN SCHEMA app_schema
@@ -110,7 +105,7 @@ GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA app_schema TO devin_dev;
 
 ### 1. Store Secrets
 
-Add the following as **org-scoped** Devin Secrets (Settings > Secrets):
+Add as **org-scoped** Devin Secrets (Settings > Secrets):
 
 | Secret Name | Value | Example |
 |---|---|---|
