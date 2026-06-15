@@ -109,15 +109,13 @@ See [examples/blueprint-service-principal-sql-mi.yaml](../examples/blueprint-ser
 ```yaml
 initialize: |
   curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
-  # Install sqlcmd (Microsoft ODBC tools)
+  # Install Go-based sqlcmd (supports Entra ID token auth natively)
   curl -sSL https://packages.microsoft.com/keys/microsoft.asc | sudo tee /etc/apt/trusted.gpg.d/microsoft.asc > /dev/null
   echo "deb [arch=amd64] https://packages.microsoft.com/ubuntu/$(lsb_release -rs)/prod $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/mssql-release.list
   sudo apt-get update
-  sudo ACCEPT_EULA=Y apt-get install -y mssql-tools18 unixodbc-dev
-  echo 'export PATH="$PATH:/opt/mssql-tools18/bin"' >> ~/.bashrc
+  sudo apt-get install -y sqlcmd
 
 maintenance: |
-  export PATH="$PATH:/opt/mssql-tools18/bin"
 
   az login --service-principal \
     --username "$AZURE_CLIENT_ID" \
@@ -136,7 +134,7 @@ knowledge:
     contents: |
       Azure SQL MI dev database is available at $MI_HOST via Entra ID token auth.
       Entra ID token location: /dev/shm/azure-sql-token
-      Connect with sqlcmd: sqlcmd -S $MI_HOST -d $DB_NAME -G -P $(cat /dev/shm/azure-sql-token)
+      Connect with sqlcmd: sqlcmd -S $MI_HOST -d $DB_NAME --authentication-method ActiveDirectoryAccessToken --access-token $(cat /dev/shm/azure-sql-token)
       Token expires in ~1 hour. Refresh: az account get-access-token --resource https://database.windows.net/ --query accessToken -o tsv
 ```
 
@@ -158,7 +156,9 @@ cat /dev/shm/azure-sql-token | head -c 50
 # Should show a JWT prefix (eyJ...)
 
 # Connect with sqlcmd using Entra ID token
-sqlcmd -S "$MI_HOST" -d "$DB_NAME" -G -P "$(cat /dev/shm/azure-sql-token)"
+sqlcmd -S "$MI_HOST" -d "$DB_NAME" \
+  --authentication-method ActiveDirectoryAccessToken \
+  --access-token "$(cat /dev/shm/azure-sql-token)"
 
 # Verify TLS is active
 SELECT encrypt_option FROM sys.dm_exec_connections WHERE session_id = @@SPID;

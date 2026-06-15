@@ -64,11 +64,12 @@ az ad app federated-credential create \
 maintenance: |
   # OIDC token automatically available as $DEVIN_OIDC_TOKEN or via a file
   # Exchange OIDC token for Entra ID access token
+  # For PostgreSQL: scope=https://ossrdbms-aad.database.windows.net/.default
+  # For SQL MI:     scope=https://database.windows.net/.default
   AZURE_TOKEN=$(curl -s -X POST \
     "https://login.microsoftonline.com/$AZURE_TENANT_ID/oauth2/v2.0/token" \
     -d "client_id=$AZURE_CLIENT_ID" \
-    -d "scope=https://ossrdbms-aad.database.windows.net/.default" \  # PostgreSQL
-    # or: -d "scope=https://database.windows.net/.default" \         # SQL MI
+    -d "scope=https://ossrdbms-aad.database.windows.net/.default" \
     -d "client_assertion_type=urn:ietf:params:oauth:client-assertion-type:jwt-bearer" \
     -d "client_assertion=$DEVIN_OIDC_TOKEN" \
     -d "grant_type=client_credentials" \

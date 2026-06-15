@@ -91,7 +91,7 @@ Options are ordered from simplest to most infrastructure. Each has sub-variants 
 ### Why This Approach
 
 - **No additional infrastructure** -- no private endpoint, no service principal, no Azure CLI on Devin
-- **No Devin blueprint changes needed** -- `sqlcmd` / `psql` and standard client libraries connect directly
+- **Minimal Devin blueprint** -- `psql` is already available; `sqlcmd` installs once via `initialize` and persists in snapshot
 - **Simplest mental model** -- standard database auth over TLS
 
 ### Trade-offs

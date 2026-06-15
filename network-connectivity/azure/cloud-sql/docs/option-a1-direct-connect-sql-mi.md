@@ -108,7 +108,7 @@ knowledge:
       TLS is always enforced by Azure SQL MI.
 ```
 
-No `initialize` or `maintenance` commands needed.
+No `initialize` or `maintenance` commands needed if `sqlcmd` is already available. If not, see the full blueprint ([examples/blueprint-direct-connect-sql-mi.yaml](../examples/blueprint-direct-connect-sql-mi.yaml)) which installs `sqlcmd` in `initialize`.
 
 ### 3. MCP Server (Optional)
 
