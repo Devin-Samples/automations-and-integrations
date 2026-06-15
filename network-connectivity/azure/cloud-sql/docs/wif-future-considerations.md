@@ -109,4 +109,4 @@ The same OIDC identity would also enable:
 
 If the Devin platform team evaluates adding per-session identity, OIDC is the most portable standard. A single OIDC issuer would unlock credential-less authentication across Azure, GCP, AWS, and any OIDC-compatible system.
 
-Until then, use [Option C (Customer-Hosted Private Endpoint)](option-c1-private-endpoint-sql-mi.md) for production or [Option B (Service Principal)](option-b1-service-principal-postgresql.md) for POC.
+Until then, use [Option C (Customer-Hosted Private Endpoint)](option-c2-private-endpoint-postgresql.md) for production or [Option B (Service Principal)](option-b1-service-principal-postgresql.md) for POC.
