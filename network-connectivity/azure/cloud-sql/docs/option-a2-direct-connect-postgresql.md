@@ -1,4 +1,4 @@
-# Option C: Direct Connect
+# Option A2: Direct Connect — Azure Database for PostgreSQL
 
 > Simplest possible setup. Devin connects directly to Azure Database for PostgreSQL using a standard connection string -- no service principal, no Azure identity.
 
@@ -7,8 +7,6 @@
 Devin connects to Azure Database for PostgreSQL Flexible Server using a standard `postgresql://` connection string over TLS. No Azure CLI, no service principal, no special binaries. The only credential on Devin is a database user and password.
 
 Azure Database for PostgreSQL Flexible Server **enforces TLS by default** (`require_secure_transport = ON`). Even with this simplest option, transport encryption is guaranteed unless the customer has explicitly disabled it.
-
-This is the fastest path to a working connection but provides fewer security layers than Options A or B.
 
 ## Prerequisites
 
@@ -41,7 +39,7 @@ az postgres flexible-server update \
 
 ### 2. Configure Firewall Rules
 
-**Option A: Devin Static IPs**
+**Devin Static IPs:**
 
 ```bash
 # Add Devin's static egress IPs to the server firewall
@@ -56,22 +54,19 @@ az postgres flexible-server firewall-rule create \
 # Repeat for each Devin egress IP
 ```
 
-**Option B: Zscaler ZPA**
+**Zscaler ZPA:**
 - Add the Flexible Server's public endpoint (`SERVER.postgres.database.azure.com:5432`) as a ZPA Application Segment
 
 ### 3. Create the Database Role
 
 ```sql
--- Create a dedicated user for Devin
 CREATE USER devin_dev WITH PASSWORD 'SECURE_PASSWORD';
 
--- Read-only on shared schemas
 GRANT USAGE ON SCHEMA shared_schema TO devin_dev;
 GRANT SELECT ON ALL TABLES IN SCHEMA shared_schema TO devin_dev;
 ALTER DEFAULT PRIVILEGES IN SCHEMA shared_schema
   GRANT SELECT ON TABLES TO devin_dev;
 
--- Read-write on application schema
 GRANT USAGE ON SCHEMA app_schema TO devin_dev;
 GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA app_schema TO devin_dev;
 ALTER DEFAULT PRIVILEGES IN SCHEMA app_schema
@@ -82,7 +77,6 @@ GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA app_schema TO devin_dev;
 ### 4. Verify TLS Enforcement (Optional)
 
 ```bash
-# Check that require_secure_transport is ON (default)
 az postgres flexible-server parameter show \
   --resource-group RESOURCE_GROUP \
   --server-name PG_SERVER_NAME \
@@ -106,7 +100,7 @@ Add as **org-scoped** Devin Secrets (Settings > Secrets):
 
 ### 2. Environment Blueprint
 
-See [examples/blueprint-direct-connect.yaml](../examples/blueprint-direct-connect.yaml).
+See [examples/blueprint-direct-connect-postgresql.yaml](../examples/blueprint-direct-connect-postgresql.yaml).
 
 ```yaml
 knowledge:
@@ -153,14 +147,7 @@ DELETE FROM app_schema.test_table WHERE col = 'test';
 | Blast radius if Devin secret leaks | Scoped DB user/password -- limited to granted schemas |
 | Audit trail | Azure PostgreSQL audit logs show `devin_dev` queries |
 
-## When to Choose This Option
-
-- You want the absolute fastest path to a working connection
-- The database has a public endpoint and you're comfortable with IP allowlisting
-- Entra ID token-based authentication is not required by your security policy
-- You want to avoid installing additional tools (Azure CLI) in the Devin environment
-
-## When to Upgrade to Option A or B
+## When to Upgrade to Option B or C
 
 Consider upgrading if:
 - You need to disable the Flexible Server's public endpoint

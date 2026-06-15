@@ -37,7 +37,7 @@ Devin Session                        Entra ID (Azure AD)
    access token                        bound to the service principal
 
 4. Uses token to connect          --> Azure Database for PostgreSQL
-   (token as PGPASSWORD)               Flexible Server
+   (token as PGPASSWORD)               Flexible Server or SQL MI
 ```
 
 **Customer setup would be:**
@@ -64,6 +64,8 @@ az ad app federated-credential create \
 maintenance: |
   # OIDC token automatically available as $DEVIN_OIDC_TOKEN or via a file
   # Exchange OIDC token for Entra ID access token
+  # For PostgreSQL: scope=https://ossrdbms-aad.database.windows.net/.default
+  # For SQL MI:     scope=https://database.windows.net/.default
   AZURE_TOKEN=$(curl -s -X POST \
     "https://login.microsoftonline.com/$AZURE_TENANT_ID/oauth2/v2.0/token" \
     -d "client_id=$AZURE_CLIENT_ID" \
@@ -72,8 +74,8 @@ maintenance: |
     -d "client_assertion=$DEVIN_OIDC_TOKEN" \
     -d "grant_type=client_credentials" \
     | jq -r '.access_token')
-  printf '%s\n' "$AZURE_TOKEN" > /dev/shm/azure-pg-token
-  chmod 600 /dev/shm/azure-pg-token
+  printf '%s\n' "$AZURE_TOKEN" > /dev/shm/azure-db-token
+  chmod 600 /dev/shm/azure-db-token
 ```
 
 ### Option 2: AWS IAM Identity for Devin VMs
@@ -81,7 +83,7 @@ maintenance: |
 If Devin VMs gained an AWS IAM role (even a shared one per org), the standard federation-via-AWS flow would work:
 1. Devin session assumes the AWS IAM role
 2. STS call to Entra ID exchanges the AWS token for an Entra ID token via federated credential
-3. Entra ID token used for PostgreSQL authentication
+3. Entra ID token used for database authentication
 
 However, this is architecturally harder given the Firecracker isolation model.
 
@@ -107,4 +109,4 @@ The same OIDC identity would also enable:
 
 If the Devin platform team evaluates adding per-session identity, OIDC is the most portable standard. A single OIDC issuer would unlock credential-less authentication across Azure, GCP, AWS, and any OIDC-compatible system.
 
-Until then, use [Option A (Customer-Hosted Private Endpoint)](option-a-customer-hosted-endpoint.md) for production or [Option B (Service Principal)](option-b-service-principal-on-devin.md) for POC.
+Until then, use [Option C (Customer-Hosted Private Endpoint)](option-c2-private-endpoint-postgresql.md) for production or [Option B (Service Principal)](option-b1-service-principal-postgresql.md) for POC.

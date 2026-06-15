@@ -1,6 +1,6 @@
 # Devin Environment Blueprint: Azure PostgreSQL via Direct Connect
 #
-# Architecture: Option C -- Direct PostgreSQL connection over TLS.
+# Architecture: Option A2 -- Direct PostgreSQL connection over TLS.
 # No Azure CLI, no service principal. Just a connection string.
 # Azure PostgreSQL Flexible Server enforces TLS by default (require_secure_transport = ON).
 #
@@ -10,7 +10,7 @@
 #   DB_PASSWORD   - PostgreSQL password
 #   DB_NAME       - Database name
 #
-# See: docs/option-c-direct-connect.md
+# See: docs/option-a2-direct-connect-postgresql.md
 
 # No initialize or maintenance commands needed.
 # psql and libpq are already available in Devin sessions.

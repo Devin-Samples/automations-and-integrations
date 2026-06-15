@@ -1,6 +1,6 @@
-# Option B: Service Principal on Devin
+# Option B1: Service Principal — Azure Database for PostgreSQL
 
-> Fastest to stand up for POC. Entra ID service principal credentials stored as Devin secrets, Entra ID token acquired at session start for token-based PostgreSQL authentication.
+> Entra ID service principal credentials stored as Devin secrets, Entra ID token acquired at session start for token-based PostgreSQL authentication.
 
 ## Overview
 
@@ -45,7 +45,6 @@ Note the following from the output:
 An Entra ID admin must be configured on the Flexible Server to enable Entra ID authentication:
 
 ```bash
-# Set an Entra ID admin on the Flexible Server
 az postgres flexible-server ad-admin create \
   --resource-group RESOURCE_GROUP \
   --server-name PG_SERVER_NAME \
@@ -76,7 +75,6 @@ GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA app_schema TO "devi
 ALTER DEFAULT PRIVILEGES IN SCHEMA app_schema
   GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO "devin-db-sp";
 
--- Read-only on shared schemas
 GRANT USAGE ON SCHEMA shared_schema TO "devin-db-sp";
 GRANT SELECT ON ALL TABLES IN SCHEMA shared_schema TO "devin-db-sp";
 ALTER DEFAULT PRIVILEGES IN SCHEMA shared_schema
@@ -108,23 +106,19 @@ Add as **org-scoped** Devin Secrets (Settings > Secrets):
 
 ### 2. Environment Blueprint
 
-See [examples/blueprint-service-principal.yaml](../examples/blueprint-service-principal.yaml) for the full blueprint.
+See [examples/blueprint-service-principal-postgresql.yaml](../examples/blueprint-service-principal-postgresql.yaml) for the full blueprint.
 
 ```yaml
 initialize: |
-  # Install Azure CLI (persists in snapshot)
   curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
 
 maintenance: |
-  # Log in as service principal
   az login --service-principal \
     --username "$AZURE_CLIENT_ID" \
     --password "$AZURE_CLIENT_SECRET" \
     --tenant "$AZURE_TENANT_ID" \
     --output none
 
-  # Acquire Entra ID token for Azure PostgreSQL and write to tmpfs
-  # /dev/shm is always tmpfs on Linux -- never captured in VM snapshots.
   az account get-access-token \
     --resource-type oss-rdbms \
     --query accessToken -o tsv > /dev/shm/azure-pg-token
@@ -150,8 +144,6 @@ Enable the PostgreSQL MCP server in Settings > MCP Marketplace. For Entra ID tok
 ## Validation
 
 ```bash
-# From a Devin session:
-
 # Verify Azure CLI login
 az account show --query "{tenant:tenantId, user:user.name}" -o table
 
